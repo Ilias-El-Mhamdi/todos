@@ -1892,3 +1892,20 @@ button.danger {
   font: 0.75rem/1.4 ui-monospace, monospace;
   text-align: center;
 }
+
+/* Sub-tabs (Today/Habits, Liste/Stock/Recettes) change with a horizontal swipe: give short pages room to swipe on. */
+.swipe-area {
+  min-height: 60vh;
+}
+
+.tab-content {
+  animation: tab-in 0.18s ease-out;
+}
+
+@keyframes tab-in {
+  from { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tab-content { animation: none; }
+}

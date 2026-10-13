@@ -5,6 +5,7 @@ import { formatQty, parseEntry } from '../lib/quantity'
 import { QtyEditor } from './QtyEditor'
 import { StockView } from './StockView'
 import { useLocalStorage } from '../lib/storage'
+import { useSwipeTabs } from '../lib/useSwipeTabs'
 
 interface Props {
   shopping: ShoppingState
@@ -12,14 +13,16 @@ interface Props {
 }
 
 type View = 'liste' | 'stock' | 'recettes'
+const VIEWS: View[] = ['liste', 'stock', 'recettes']
 
 /** Courses tab: shopping list, stock and recipes (rendered by the parent, which owns them). */
 export function ShoppingPage({ shopping, update, recipes }: Props & { recipes: ReactNode }) {
   const [view, setView] = useLocalStorage<View>('entretien.coursesView', 'liste')
   const missingCount = shopping.stock.filter((st) => stockLevel(st) !== 'ok').length
+  const swipe = useSwipeTabs(VIEWS, view, setView)
 
   return (
-    <div className="shopping-page">
+    <div className="shopping-page swipe-area" {...swipe}>
       <div className="tabs view-switch" role="tablist">
         <button role="tab" aria-selected={view === 'liste'} onClick={() => setView('liste')}>
           🛒 Liste
@@ -31,9 +34,11 @@ export function ShoppingPage({ shopping, update, recipes }: Props & { recipes: R
           🍳 Recettes
         </button>
       </div>
-      {view === 'liste' && <ShoppingList shopping={shopping} update={update} />}
-      {view === 'stock' && <StockView shopping={shopping} update={update} />}
-      {view === 'recettes' && recipes}
+      <div key={view} className="tab-content">
+        {view === 'liste' && <ShoppingList shopping={shopping} update={update} />}
+        {view === 'stock' && <StockView shopping={shopping} update={update} />}
+        {view === 'recettes' && recipes}
+      </div>
     </div>
   )
 }

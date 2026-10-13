@@ -7,6 +7,7 @@ import { STATUS_LABELS, STATUS_ORDER, getStatus, toISODate } from './lib/frequen
 import { Odometer } from './components/Odometer'
 import { mergeDefaults, useLocalStorage } from './lib/storage'
 import { useSyncedState } from './lib/syncedState'
+import { useSwipeTabs } from './lib/useSwipeTabs'
 import { parseHash, taskLink } from './lib/route'
 import type { TaskChanges } from './lib/tasks'
 import { NO_CHANGES, applyChanges } from './lib/tasks'
@@ -95,6 +96,9 @@ interface Row {
   hidden: boolean
 }
 
+type TodayView = 'today' | 'habits'
+const TODAY_VIEWS: TodayView[] = ['today', 'habits']
+
 const PAGES: Page[] = ['today', 'tasks', 'courses', 'voyages']
 const pageFromHash = (): Page => PAGES.find((p) => parseHash(window.location.hash).path === p) ?? 'today'
 
@@ -114,7 +118,8 @@ function withDone(s: State, task: Task, date: string): State {
 export default function App() {
   const [state, setState, offline, replaceState] = useSyncedState<State>(STORAGE_KEY, INITIAL_STATE, migrateState)
   const [page, setPage] = useState<Page>(pageFromHash)
-  const [todayView, setTodayView] = useLocalStorage<'today' | 'habits'>('entretien.todayView', 'today')
+  const [todayView, setTodayView] = useLocalStorage<TodayView>('entretien.todayView', 'today')
+  const todaySwipe = useSwipeTabs(TODAY_VIEWS, todayView, setTodayView)
   // undefined task = creating a new one; addToToday puts the created task in Today.
   const [editing, setEditing] = useState<{ task?: Task; defaults?: Partial<Task>; addToToday?: boolean } | null>(null)
   const [filters, setFilters] = useState(initialFilters)
@@ -426,45 +431,47 @@ export default function App() {
       )}
 
       {page === 'today' && (
-        <div className="tabs view-switch" role="tablist">
-          <button role="tab" aria-selected={todayView === 'today'} onClick={() => setTodayView('today')}>
-            ☀️ Today
-          </button>
-          <button role="tab" aria-selected={todayView === 'habits'} onClick={() => setTodayView('habits')}>
-            🔁 Habits
-            {habitsLeft > 0 && <span className="tab-badge">{habitsLeft}</span>}
-          </button>
+        <div className="swipe-area" {...todaySwipe}>
+          <div className="tabs view-switch" role="tablist">
+            <button role="tab" aria-selected={todayView === 'today'} onClick={() => setTodayView('today')}>
+              ☀️ Today
+            </button>
+            <button role="tab" aria-selected={todayView === 'habits'} onClick={() => setTodayView('habits')}>
+              🔁 Habits
+              {habitsLeft > 0 && <span className="tab-badge">{habitsLeft}</span>}
+            </button>
+          </div>
+
+          <div key={todayView} className="tab-content">
+            {todayView === 'habits' ? (
+              <HabitsView
+                habits={habits}
+                today={today}
+                update={(fn) => setState((s) => ({ ...s, habits: fn({ ...EMPTY_HABITS, ...s.habits }) }))}
+              />
+            ) : (
+              <TodayPage
+                rows={todayRows}
+                suggestions={suggestions}
+                daily={dailyRows}
+                onOpenTask={(task) => {
+                  window.location.hash = taskLink(task.title)
+                }}
+                onReorderDaily={(ids) => setState((s) => ({ ...s, dailyOrder: ids }))}
+                today={today}
+                progress={state.progress}
+                onToggleDone={toggleDone}
+                onRemove={toggleToday}
+                onAdd={toggleToday}
+                onReorder={reorderToday}
+                candidates={rows.filter((r) => !r.hidden && !state.today.ids.includes(r.task.id))}
+                onCreate={(title) =>
+                  setEditing({ defaults: { title, category: 'autre', frequency: 'once' }, addToToday: true })
+                }
+              />
+            )}
+          </div>
         </div>
-      )}
-
-      {page === 'today' && todayView === 'habits' && (
-        <HabitsView
-          habits={habits}
-          today={today}
-          update={(fn) => setState((s) => ({ ...s, habits: fn({ ...EMPTY_HABITS, ...s.habits }) }))}
-        />
-      )}
-
-      {page === 'today' && todayView === 'today' && (
-        <TodayPage
-          rows={todayRows}
-          suggestions={suggestions}
-          daily={dailyRows}
-          onOpenTask={(task) => {
-            window.location.hash = taskLink(task.title)
-          }}
-          onReorderDaily={(ids) => setState((s) => ({ ...s, dailyOrder: ids }))}
-          today={today}
-          progress={state.progress}
-          onToggleDone={toggleDone}
-          onRemove={toggleToday}
-          onAdd={toggleToday}
-          onReorder={reorderToday}
-          candidates={rows.filter((r) => !r.hidden && !state.today.ids.includes(r.task.id))}
-          onCreate={(title) =>
-            setEditing({ defaults: { title, category: 'autre', frequency: 'once' }, addToToday: true })
-          }
-        />
       )}
 
       {page === 'tasks' && (
