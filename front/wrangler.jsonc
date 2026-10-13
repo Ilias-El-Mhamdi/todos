@@ -1,0 +1,9 @@
+// Cloudflare Workers (static assets only): `npm run build` then `npx wrangler deploy`.
+// "name" must match the Worker name chosen in the Cloudflare dashboard.
+{
+  "name": "todos",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist"
+  }
+}
