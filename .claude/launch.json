@@ -22,6 +22,17 @@
         "preview"
       ],
       "port": 4173
+    },
+    {
+      "name": "back",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "back",
+        "run",
+        "start:dev"
+      ],
+      "port": 3000
     }
   ]
 }

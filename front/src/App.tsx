@@ -8,6 +8,8 @@ import { Odometer } from './components/Odometer'
 import { mergeDefaults, useLocalStorage } from './lib/storage'
 import { useSyncedState } from './lib/syncedState'
 import { useSwipeTabs } from './lib/useSwipeTabs'
+import type { Attachment, AttachmentsByTask } from './lib/attachments'
+import { addAttachment, deleteAttachment, forgetAttachment, removeAttachment } from './lib/attachments'
 import { parseHash, taskLink } from './lib/route'
 import type { TaskChanges } from './lib/tasks'
 import { NO_CHANGES, applyChanges } from './lib/tasks'
@@ -57,6 +59,8 @@ interface State {
   trips: Trip[]
   /** Built-in task catalog shown. New accounts start without it and add it with one button. */
   catalog: boolean
+  /** Files attached to tasks (metadata; contents are on the server). */
+  attachments: AttachmentsByTask
 }
 
 // Saves made before `catalog` existed always showed the built-in tasks: keep them.
@@ -77,6 +81,7 @@ const INITIAL_STATE: State = {
   dailyOrder: [],
   trips: [],
   catalog: false,
+  attachments: {},
 }
 
 type Theme = 'dark' | 'light'
@@ -319,7 +324,22 @@ export default function App() {
     setEditing(null)
   }
 
+  const removeTaskAttachment = async (taskId: string, attachment: Attachment) => {
+    try {
+      await deleteAttachment(attachment.id)
+    } catch (err) {
+      window.alert(`Suppression impossible : ${err instanceof TypeError ? 'serveur injoignable' : (err as Error).message}`)
+      return
+    }
+    void forgetAttachment(attachment.id)
+    setState((s) => ({ ...s, attachments: removeAttachment(s.attachments, taskId, attachment.id) }))
+  }
+
   const deleteTask = (id: string) => {
+    // Best effort: a file left behind (offline) only costs storage.
+    for (const a of state.attachments[id] ?? []) {
+      deleteAttachment(a.id).then(() => forgetAttachment(a.id), () => {})
+    }
     setState((s) => {
       const c = s.changes
       const edited = { ...c.edited }
@@ -329,11 +349,14 @@ export default function App() {
         : { ...c, added: c.added.filter((t) => t.id !== id) }
       const done = { ...s.done }
       const progress = { ...s.progress }
+      const attachments = { ...s.attachments }
       delete done[id]
       delete progress[id]
+      delete attachments[id]
       return {
         ...s,
         changes,
+        attachments,
         done,
         progress,
         hidden: s.hidden.filter((h) => h !== id),
@@ -521,6 +544,11 @@ export default function App() {
                     onToggleToday={() => toggleToday(r.task.id)}
                     checkedSubtasks={state.progress[r.task.id] ?? []}
                     onToggleSubtask={(subId) => toggleSubtask(r.task, subId)}
+                    attachments={state.attachments[r.task.id] ?? []}
+                    onAddAttachment={(a) =>
+                      setState((s) => ({ ...s, attachments: addAttachment(s.attachments, r.task.id, a) }))
+                    }
+                    onRemoveAttachment={(a) => void removeTaskAttachment(r.task.id, a)}
                   />
                 ))}
               </ul>

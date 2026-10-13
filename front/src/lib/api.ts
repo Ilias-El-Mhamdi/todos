@@ -26,13 +26,14 @@ export function setToken(token: string | null) {
   window.dispatchEvent(new Event(AUTH_EVENT))
 }
 
-/** JSON call to the back. A 401 on an authenticated call drops the token, which sends the app back to login. */
-export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
+/** Call to the back. A 401 on an authenticated call drops the token, which sends the app back to login. */
+async function request(path: string, init: RequestInit): Promise<Response> {
   const token = getToken()
   const res = await fetch(API_URL + path, {
     ...init,
     headers: {
-      'content-type': 'application/json',
+      // FormData: the browser sets the multipart content type with its boundary.
+      ...(init.body instanceof FormData ? {} : { 'content-type': 'application/json' }),
       ...(token ? { authorization: `Bearer ${token}` } : {}),
       ...init.headers,
     },
@@ -46,5 +47,16 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
     const message = body?.message
     throw new ApiError(res.status, Array.isArray(message) ? message.join(', ') : (message ?? `Erreur ${res.status}`), body)
   }
-  return res.json()
+  return res
+}
+
+/** JSON call to the back (empty answers, e.g. 204, give undefined). */
+export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const res = await request(path, init)
+  return res.status === 204 ? (undefined as T) : res.json()
+}
+
+/** Binary download (attachments): needs the token, so it can't be a plain <img src>. */
+export async function apiBlob(path: string): Promise<Blob> {
+  return (await request(path, {})).blob()
 }

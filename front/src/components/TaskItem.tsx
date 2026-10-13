@@ -3,6 +3,8 @@ import type { Task } from '../data/tasks'
 import { CATEGORIES, FREQUENCIES } from '../data/tasks'
 import type { DoneRecord, Status } from '../lib/frequency'
 import { STATUS_LABELS, nextDue, nextDueKm } from '../lib/frequency'
+import type { Attachment } from '../lib/attachments'
+import { AttachButton, AttachmentList } from './Attachments'
 
 interface Props {
   task: Task
@@ -20,6 +22,9 @@ interface Props {
   onToggleToday: () => void
   checkedSubtasks: string[]
   onToggleSubtask: (subId: string) => void
+  attachments: Attachment[]
+  onAddAttachment: (attachment: Attachment) => void
+  onRemoveAttachment: (attachment: Attachment) => void
 }
 
 const formatDate = (iso: string) =>
@@ -52,6 +57,9 @@ export function TaskItem({
   onToggleToday,
   checkedSubtasks,
   onToggleSubtask,
+  attachments,
+  onAddAttachment,
+  onRemoveAttachment,
 }: Props) {
   const [expanded, setExpanded] = useState(false)
   const last = record?.last
@@ -98,6 +106,7 @@ export function TaskItem({
             onToggle={onToggleSubtask}
           />
         )}
+        {attachments.length > 0 && <AttachmentList attachments={attachments} onRemove={onRemoveAttachment} />}
       </div>
 
       <div className="task-actions">
@@ -127,6 +136,7 @@ export function TaskItem({
           {inToday ? '☀️ Dans Today' : '+ Today'}
         </button>
         <span className="item-links">
+          <AttachButton onAdded={onAddAttachment} />
           <button className="link" onClick={onEdit}>
             Modifier
           </button>
