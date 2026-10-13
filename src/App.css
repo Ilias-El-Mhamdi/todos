@@ -1761,3 +1761,82 @@ button.danger {
     align-items: center;
   }
 }
+
+/* Login */
+.login-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 420px;
+  padding-top: 15vh;
+}
+
+.login-card,
+.login-card form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.login-card {
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.login-card h1 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.login-card label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.login-card input,
+.login-card textarea {
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  font-weight: 400;
+}
+
+.login-card textarea {
+  font: 0.8rem/1.4 ui-monospace, monospace;
+  resize: vertical;
+  word-break: break-all;
+}
+
+.login-card .hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 400;
+}
+
+.hash-tool summary {
+  color: var(--muted);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.hash-tool[open] summary {
+  margin-bottom: 12px;
+}
+
+/* Offline banner */
+.sync-banner {
+  margin: 0 0 16px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--today-bg);
+  color: var(--today);
+  font-size: 0.85rem;
+  text-align: center;
+}

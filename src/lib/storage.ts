@@ -1,26 +1,33 @@
 import { useEffect, useState } from 'react'
 
-export function useLocalStorage<T>(key: string, initial: T) {
-  const [value, setValue] = useState<T>(() => {
-    try {
-      const raw = localStorage.getItem(key)
-      if (!raw) return initial
-      const saved = JSON.parse(raw)
-      // Objects get new default fields merged in; other values are used as saved.
-      const isObject = (v: unknown) => typeof v === 'object' && v !== null && !Array.isArray(v)
-      return isObject(initial) && isObject(saved) ? { ...initial, ...saved } : saved
-    } catch {
-      return initial
-    }
-  })
+/** Objects get new default fields merged in; other values are used as saved. */
+export function mergeDefaults<T>(initial: T, saved: unknown): T {
+  const isObject = (v: unknown) => typeof v === 'object' && v !== null && !Array.isArray(v)
+  return (isObject(initial) && isObject(saved) ? { ...initial, ...(saved as object) } : saved) as T
+}
 
-  useEffect(() => {
-    try {
-      localStorage.setItem(key, JSON.stringify(value))
-    } catch {
-      // storage unavailable (private mode, quota): keep in-memory state
-    }
-  }, [key, value])
+export function readLocal<T>(key: string, initial: T, migrate: (saved: unknown) => unknown = (v) => v): T {
+  try {
+    const raw = localStorage.getItem(key)
+    return raw ? mergeDefaults(initial, migrate(JSON.parse(raw))) : initial
+  } catch {
+    return initial
+  }
+}
+
+export function writeLocal(key: string, value: unknown) {
+  try {
+    if (value === undefined) localStorage.removeItem(key)
+    else localStorage.setItem(key, JSON.stringify(value))
+  } catch {
+    // storage unavailable (private mode, quota): keep in-memory state
+  }
+}
+
+export function useLocalStorage<T>(key: string, initial: T) {
+  const [value, setValue] = useState<T>(() => readLocal(key, initial))
+
+  useEffect(() => writeLocal(key, value), [key, value])
 
   return [value, setValue] as const
 }

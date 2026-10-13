@@ -6,6 +6,7 @@ import type { Status } from './lib/frequency'
 import { STATUS_LABELS, STATUS_ORDER, getStatus, toISODate } from './lib/frequency'
 import { Odometer } from './components/Odometer'
 import { useLocalStorage } from './lib/storage'
+import { useSyncedState } from './lib/syncedState'
 import { parseHash, taskLink } from './lib/route'
 import type { TaskChanges } from './lib/tasks'
 import { NO_CHANGES, applyChanges } from './lib/tasks'
@@ -51,7 +52,13 @@ interface State {
   /** User order of the daily tasks shown in Today. */
   dailyOrder: string[]
   trips: Trip[]
+  /** Built-in task catalog shown. New accounts start without it and add it with one button. */
+  catalog: boolean
 }
+
+// Saves made before `catalog` existed always showed the built-in tasks: keep them.
+const migrateState = (saved: unknown) =>
+  typeof saved === 'object' && saved !== null && !('catalog' in saved) ? { ...saved, catalog: true } : saved
 
 const STORAGE_KEY = 'entretien.v1'
 
@@ -89,7 +96,7 @@ function withDone(s: State, task: Task, date: string): State {
 }
 
 export default function App() {
-  const [state, setState] = useLocalStorage<State>(STORAGE_KEY, {
+  const [state, setState, offline] = useSyncedState<State>(STORAGE_KEY, {
     done: {},
     hidden: [],
     progress: {},
@@ -100,7 +107,8 @@ export default function App() {
     habits: EMPTY_HABITS,
     dailyOrder: [],
     trips: [],
-  })
+    catalog: false,
+  }, migrateState)
   const [page, setPage] = useState<Page>(pageFromHash)
   const [todayView, setTodayView] = useLocalStorage<'today' | 'habits'>('entretien.todayView', 'today')
   // undefined task = creating a new one; addToToday puts the created task in Today.
@@ -154,7 +162,10 @@ export default function App() {
   const habits = { ...EMPTY_HABITS, ...state.habits }
   const habitsLeft = habits.list.filter((h) => h.kind === 'good' && (habits.log[h.id]?.[today] ?? 0) < h.target).length
 
-  const tasks = useMemo(() => applyChanges(TASKS, state.changes), [state.changes])
+  const tasks = useMemo(
+    () => applyChanges(state.catalog ? TASKS : [], state.changes),
+    [state.catalog, state.changes],
+  )
 
   const rows: Row[] = useMemo(
     () =>
@@ -345,6 +356,9 @@ export default function App() {
 
   const restoreDeleted = () => setState((s) => ({ ...s, changes: { ...s.changes, deleted: [] } }))
 
+  // All essentials, including any deleted before the catalog was turned off.
+  const addCatalog = () => setState((s) => ({ ...s, catalog: true, changes: { ...s.changes, deleted: [] } }))
+
   const toggleHidden = (id: string) =>
     setState((s) => ({
       ...s,
@@ -353,6 +367,11 @@ export default function App() {
 
   return (
     <main className="app">
+      {offline && (
+        <p className="sync-banner" role="status">
+          Hors ligne · tes modifications restent sur l’appareil et seront synchronisées au retour du réseau.
+        </p>
+      )}
       <header>
         <div>
           <h1>Entretien &amp; Prévoyance</h1>
@@ -455,7 +474,16 @@ export default function App() {
             </button>
           </div>
 
-          {groups.length === 0 && <p className="empty">Aucune tâche ne correspond.</p>}
+          {tasks.length === 0 ? (
+            <div className="empty">
+              <p>Aucune tâche pour l’instant. Crée les tiennes, ou pars des tâches d’entretien essentielles.</p>
+              <button className="primary" onClick={addCatalog}>
+                Ajouter les essentielles ({TASKS.length})
+              </button>
+            </div>
+          ) : (
+            groups.length === 0 && <p className="empty">Aucune tâche ne correspond.</p>
+          )}
 
           {groups.map((g) => (
             <section key={g.key} className="group">
@@ -487,7 +515,15 @@ export default function App() {
             </section>
           ))}
 
-          {state.changes.deleted.length > 0 && (
+          {!state.catalog && tasks.length > 0 && (
+            <p className="footer-note">
+              <button className="link" onClick={addCatalog}>
+                Ajouter les tâches essentielles ({TASKS.length})
+              </button>
+            </p>
+          )}
+
+          {state.catalog && state.changes.deleted.length > 0 && (
             <p className="footer-note">
               {state.changes.deleted.length} tâche(s) par défaut supprimée(s) ·{' '}
               <button className="link" onClick={restoreDeleted}>
