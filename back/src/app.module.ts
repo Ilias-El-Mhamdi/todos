@@ -16,6 +16,7 @@ import { AppStateUc } from './core/flows/appState/appState.uc';
 import { LoginController } from './infra/controllers/login/login.controller';
 import { AppStateController } from './infra/controllers/appState/appState.controller';
 import { HealthController } from './infra/controllers/system/health.controller';
+import { VersionController } from './infra/controllers/system/version.controller';
 
 @Module({
   imports: [
@@ -31,7 +32,7 @@ import { HealthController } from './infra/controllers/system/health.controller';
       }),
     }),
   ],
-  controllers: [LoginController, AppStateController, HealthController],
+  controllers: [LoginController, AppStateController, HealthController, VersionController],
   providers: [{ provide: APP_GUARD, useClass: JwtAuthGuard }, AuthUc, AppStateUc],
 })
 export class AppModule {}

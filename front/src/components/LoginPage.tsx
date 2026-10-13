@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { apiFetch, setToken } from '../lib/api'
+import { VersionInfo } from './VersionInfo'
 
 export function LoginPage() {
   const [username, setUsername] = useState('')
@@ -48,6 +49,7 @@ export function LoginPage() {
         </button>
       </form>
       <HashTool />
+      <VersionInfo />
     </main>
   )
 }

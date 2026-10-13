@@ -5,6 +5,8 @@
       "name": "dev",
       "runtimeExecutable": "npm",
       "runtimeArgs": [
+        "--prefix",
+        "front",
         "run",
         "dev"
       ],
@@ -14,6 +16,8 @@
       "name": "preview",
       "runtimeExecutable": "npm",
       "runtimeArgs": [
+        "--prefix",
+        "front",
         "run",
         "preview"
       ],

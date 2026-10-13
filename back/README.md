@@ -25,6 +25,7 @@ dans la base.
 | `GET /state/:key`  | Bearer | `{ value, updatedAt }` (`value: null` si absent)  |
 | `PUT /state/:key`  | Bearer | `{ value, baseUpdatedAt }` → upsert, 409 si la base a changé depuis `baseUpdatedAt` |
 | `GET /health`      | public | health check Render                               |
+| `GET /version`     | public | `{ commit, startedAt }` — commit déployé (`RENDER_GIT_COMMIT`) |
 
 Token en header `Authorization: Bearer` (pas de cookie) : front et back sont sur deux domaines différents et Safari/iOS
 bloque les cookies tiers.

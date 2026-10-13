@@ -13,6 +13,7 @@ import { NO_CHANGES, applyChanges } from './lib/tasks'
 import { TaskForm } from './components/TaskForm'
 import type { Page } from './components/TabBar'
 import { TabBar } from './components/TabBar'
+import { VersionInfo } from './components/VersionInfo'
 import { ShoppingPage } from './components/ShoppingPage'
 import { RecipesPage } from './components/RecipesPage'
 import { HabitsView } from './components/HabitsView'
@@ -533,6 +534,8 @@ export default function App() {
           )}
         </>
       )}
+
+      <VersionInfo />
 
       <TabBar page={page} todayLeft={todayLeft} shoppingLeft={shopping.items.filter((i) => !i.checked).length} />
 

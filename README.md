@@ -1,14 +1,40 @@
 # Entretien & Prévoyance
 
-App locale (Vite + React + TS) listant les tâches récurrentes — quotidien → 10 ans — pour l'appartement, la voiture, la santé physique et mentale, et la prévoyance. Les données sont stockées en base via le back (`back/`, voir son README), avec le `localStorage` comme cache hors-ligne (clé `entretien.v1`).
+PWA (Vite + React + TS) listant les tâches récurrentes — quotidien → 10 ans — pour l'appartement, la voiture, la santé
+physique et mentale, et la prévoyance. Les données sont stockées en base via le back, avec le `localStorage` comme cache
+hors-ligne (clé `entretien.v1`).
+
+| Dossier  | Contenu                                   | Déploiement      |
+|----------|-------------------------------------------|------------------|
+| `front/` | PWA React                                 | Cloudflare Pages |
+| `back/`  | API NestJS + TypeORM (voir son README)    | Render           |
+| `ops/`   | Postgres local (`make up`, port 5433)     | — (Neon en prod) |
+
+## Dev local
 
 ```bash
-npm install
-npm run dev     # http://localhost:5173 (back attendu sur http://localhost:3000, ou VITE_API_URL)
-npm test        # tests du calcul d'échéances
+cd ops && make up                 # Postgres
+cd back && npm run start:dev      # http://localhost:3000
+cd front && npm run dev           # http://localhost:5173
+cd front && npm test              # tests du calcul d'échéances
 ```
 
-- PWA hors-ligne : `public/sw.js` (app shell, actif seulement en build de prod — tester avec `npm run build && npm run preview`), `public/manifest.webmanifest`
+## Front
+
+- PWA hors-ligne : `public/sw.js` (app shell, actif seulement en build de prod — tester avec
+  `npm run build && npm run preview`), `public/manifest.webmanifest`
 - Synchro des données (cache local, envoi au retour du réseau, conflits) : `src/lib/syncedState.ts`
 - Catalogue des tâches : `src/data/tasks.ts`
 - Calcul des échéances / statuts : `src/lib/frequency.ts`
+
+### Déploiement Cloudflare Pages
+
+Connecter le repo GitHub (Workers & Pages → Create → Pages → Connect to Git), puis :
+
+- Root directory : `front`
+- Framework preset : Vite — Build command : `npm run build` — Output directory : `dist`
+- Variable d'environnement : `VITE_API_URL` = URL Render du back (lue au build : redéployer si elle change)
+
+Node 24 vient de `front/.nvmrc`. `public/_headers` met les assets hashés en cache longue durée et `sw.js` en `no-cache`
+pour que les mises à jour de l'app soient prises tout de suite. Côté Render, `FRONTEND_URL` doit valoir l'URL
+`*.pages.dev` (ou le domaine perso) pour le CORS.
