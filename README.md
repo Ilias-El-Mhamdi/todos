@@ -27,14 +27,13 @@ cd front && npm test              # tests du calcul d'échéances
 - Catalogue des tâches : `src/data/tasks.ts`
 - Calcul des échéances / statuts : `src/lib/frequency.ts`
 
-### Déploiement Cloudflare (Workers, assets statiques)
+### Déploiement Cloudflare Pages
 
-Workers & Pages → Create → Import a repository (`todos`), puis :
+Workers & Pages → Create → Pages → Connect to Git (`todos`), puis :
 
-- Project name : `todos` (doit correspondre à `name` dans `front/wrangler.jsonc`)
-- Build command : `npm run build` — Deploy command : `npx wrangler deploy`
-- Advanced settings → Path (root directory) : `front`
-- Advanced settings → Build variables : `VITE_API_URL` = URL Render du back (lue au build : redéployer si elle change)
+- Framework preset : React (Vite) ou None — Build command : `npm run build` — Build output directory : `dist`
+- Root directory (advanced) : `front`
+- Variable d'environnement : `VITE_API_URL` = URL Render du back (lue au build : redéployer si elle change)
 
 Node 24 vient de `front/.nvmrc`. `public/_headers` met les assets hashés en cache longue durée et `sw.js` en `no-cache`
 pour que les mises à jour de l'app soient prises tout de suite.

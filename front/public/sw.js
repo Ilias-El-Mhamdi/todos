@@ -2,8 +2,10 @@
 // - Page: network first (picks up new deploys as soon as online), cached copy when offline.
 // - /assets/*: hashed by Vite, so immutable: cache first. Each fresh page caches its assets and drops old ones.
 // - Other same-origin files (icons, manifest): cached copy at once, refreshed in the background.
-const CACHE = 'entretien-shell-v1'
-const PAGE = '/index.html'
+const CACHE = 'entretien-shell-v2'
+// "/" and not "/index.html": Cloudflare Pages redirects /index.html → /, and a navigation can't be answered with a
+// redirected response (ERR_FAILED).
+const PAGE = '/'
 
 self.addEventListener('install', (event) => {
   event.waitUntil(cachePage().then(() => self.skipWaiting()))
@@ -36,7 +38,7 @@ self.addEventListener('fetch', (event) => {
 
 /** Fetches the page, caches it with the assets it references, and removes assets of older builds. */
 async function cachePage() {
-  const response = await fetch(PAGE, { cache: 'no-cache' })
+  const response = unredirect(await fetch(PAGE, { cache: 'no-cache' }))
   if (!response.ok) throw new Error(`page ${response.status}`)
   const html = await response.clone().text()
   const assets = [...new Set([...html.matchAll(/(?:src|href)="(\/assets\/[^"]+)"/g)].map((m) => m[1]))]
@@ -50,6 +52,12 @@ async function cachePage() {
     if (path.startsWith('/assets/') && !assets.includes(path)) await cache.delete(request)
   }
   return response
+}
+
+/** Same content without the "redirected" flag, which would make the browser reject it for a navigation. */
+function unredirect(response) {
+  if (!response.redirected) return response
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers: response.headers })
 }
 
 async function fetchAndCache(request) {
