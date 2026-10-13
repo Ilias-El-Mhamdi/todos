@@ -504,7 +504,15 @@ export default function App() {
           <Odometer value={state.odometer} onChange={setOdometer} />
           <Filters value={filters} onChange={setFilters} />
           <div className="list-toolbar">
-            <button className="primary" onClick={() => setEditing({})}>
+            <button
+              className="primary"
+              // Active filters preselect the new task's category and frequency.
+              onClick={() =>
+                setEditing({
+                  defaults: { category: filters.category ?? undefined, frequency: filters.frequency ?? undefined },
+                })
+              }
+            >
               + Nouvelle tâche
             </button>
           </div>
