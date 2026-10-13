@@ -17,9 +17,11 @@ export interface HabitsState {
   list: Habit[]
   /** Count per habit id, per day (YYYY-MM-DD). Days with 0 are omitted. */
   log: Record<string, Record<string, number>>
+  /** Habit currently being done (highlighted); at most one at a time. */
+  focus: string | null
 }
 
-export const EMPTY_HABITS: HabitsState = { list: [], log: {} }
+export const EMPTY_HABITS: HabitsState = { list: [], log: {}, focus: null }
 
 export function newHabitId(): string {
   return `habit-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`
@@ -80,7 +82,12 @@ export function updateHabit(state: HabitsState, id: string, patch: Partial<Omit<
 export function removeHabit(state: HabitsState, id: string): HabitsState {
   const log = { ...state.log }
   delete log[id]
-  return { list: state.list.filter((h) => h.id !== id), log }
+  return { list: state.list.filter((h) => h.id !== id), log, focus: state.focus === id ? null : state.focus }
+}
+
+/** Gives the focus to `id`, or takes it back if it already has it. */
+export function toggleFocus(state: HabitsState, id: string): HabitsState {
+  return { ...state, focus: state.focus === id ? null : id }
 }
 
 /** Puts habits in the given id order; unknown ids are ignored, missing ones keep their place at the end. */

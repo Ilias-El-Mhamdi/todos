@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { ReactNode } from 'react'
 import type { Habit, HabitsState } from '../lib/habits'
 import {
   addHabit,
@@ -10,9 +11,11 @@ import {
   reorderHabits,
   setCount,
   streak,
+  toggleFocus,
   updateHabit,
 } from '../lib/habits'
 import { useDragReorder } from '../lib/useDragReorder'
+import { useLongPress } from '../lib/useLongPress'
 
 interface Props {
   habits: HabitsState
@@ -25,6 +28,15 @@ const weekday = (iso: string) =>
 
 const longDate = (iso: string) =>
   new Date(`${iso}T00:00:00`).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
+
+function PressButton(props: { className: string; onTap: () => void; onLongPress: () => void; children: ReactNode }) {
+  const press = useLongPress(props.onLongPress, props.onTap)
+  return (
+    <button className={props.className} {...press}>
+      {props.children}
+    </button>
+  )
+}
 
 export function HabitsView({ habits, today, update }: Props) {
   const [name, setName] = useState('')
@@ -65,9 +77,10 @@ export function HabitsView({ habits, today, update }: Props) {
     const state = habit.kind === 'bad' ? (done ? 'clean' : 'slipped') : done ? 'done' : count > 0 ? 'partial' : 'todo'
     const n = streak(habits, habit, today)
     const open = openId === habit.id
+    const focused = habits.focus === habit.id
 
     return (
-      <li key={habit.id} className={`habit habit-${state}${open ? ' open' : ''}`}>
+      <li key={habit.id} className={`habit habit-${state}${open ? ' open' : ''}${focused ? ' focused' : ''}`}>
         <div className="habit-row">
           <button
             className="habit-plus"
@@ -77,7 +90,11 @@ export function HabitsView({ habits, today, update }: Props) {
             {habit.kind === 'bad' ? '!' : done ? '✓' : '+'}
           </button>
 
-          <button className="habit-body" onClick={() => setOpenId(open ? null : habit.id)} aria-expanded={open}>
+          <PressButton
+            className="habit-body"
+            onTap={() => update((s) => toggleFocus(s, habit.id))}
+            onLongPress={() => setOpenId(habit.id)}
+          >
             <span className="habit-name">{habit.name}</span>
             <span className="habit-meta">
               {habit.kind === 'good' ? (
@@ -105,7 +122,7 @@ export function HabitsView({ habits, today, update }: Props) {
                 )
               })}
             </span>
-          </button>
+          </PressButton>
 
           <button
             className="habit-minus"
@@ -269,8 +286,8 @@ export function HabitsView({ habits, today, update }: Props) {
           <p>
             Aucune habitude.
             <br />
-            Touche <strong>+</strong> à chaque fois que tu la fais ; touche le nom pour régler l’objectif ou en faire
-            une habitude à éviter.
+            Touche <strong>+</strong> à chaque fois que tu la fais, touche le nom pour la mettre en cours ; appui long
+            sur le nom pour régler l’objectif ou en faire une habitude à éviter.
           </p>
         </div>
       ) : (

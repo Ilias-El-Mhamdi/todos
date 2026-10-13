@@ -820,6 +820,21 @@ select {
   overflow: hidden;
 }
 
+/* Habit in progress: one at a time, picked with a tap on its name. */
+.habit.focused {
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+  box-shadow: 0 0 0 2px var(--accent);
+  animation: habit-focus 2.4s ease-in-out infinite;
+}
+
+@keyframes habit-focus {
+  50% { box-shadow: 0 0 0 2px var(--accent), 0 0 14px 2px color-mix(in srgb, var(--accent) 45%, transparent); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .habit.focused { animation: none; }
+}
+
 .habit-done,
 .habit-clean { --habit: var(--ok); }
 .habit-slipped { --habit: var(--late); }
@@ -861,6 +876,10 @@ select {
   background: none;
   text-align: left;
   cursor: pointer;
+  /* Long press opens the settings: no text selection or iOS callout. */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .habit-name {

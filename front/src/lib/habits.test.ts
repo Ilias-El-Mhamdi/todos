@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { HabitsState } from './habits'
-import { EMPTY_HABITS, addHabit, countOn, increment, lastDays, removeHabit, reorderHabits, setCount, streak } from './habits'
+import { EMPTY_HABITS, addHabit, countOn, increment, lastDays, removeHabit, reorderHabits, setCount, streak, toggleFocus } from './habits'
 
 const today = '2026-10-13'
 
@@ -77,5 +77,22 @@ describe('list management', () => {
     s = removeHabit(s, a.id)
     expect(s.list.map((h) => h.name)).toEqual(['C', 'B'])
     expect(s.log[a.id]).toBeUndefined()
+  })
+
+  it('focuses one habit at a time, toggled by a second tap', () => {
+    let s = addHabit(addHabit(EMPTY_HABITS, 'A', today), 'B', today)
+    const [a, b] = s.list
+    s = toggleFocus(s, a.id)
+    expect(s.focus).toBe(a.id)
+    s = toggleFocus(s, b.id)
+    expect(s.focus).toBe(b.id)
+    expect(toggleFocus(s, b.id).focus).toBeNull()
+  })
+
+  it('drops the focus with the removed habit', () => {
+    let s = addHabit(addHabit(EMPTY_HABITS, 'A', today), 'B', today)
+    const [a, b] = s.list
+    expect(removeHabit(toggleFocus(s, a.id), a.id).focus).toBeNull()
+    expect(removeHabit(toggleFocus(s, a.id), b.id).focus).toBe(a.id)
   })
 })
