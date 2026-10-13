@@ -4,6 +4,8 @@ import { CATEGORIES } from '../data/tasks'
 import type { DoneRecord, Status } from '../lib/frequency'
 import { STATUS_LABELS } from '../lib/frequency'
 import { useDragReorder } from '../lib/useDragReorder'
+import { useLocalStorage } from '../lib/storage'
+import { SubtaskGroups } from './TaskItem'
 
 export interface TodayRow {
   task: Task
@@ -22,6 +24,8 @@ interface Props {
   today: string
   progress: Record<string, string[]>
   onToggleDone: (task: Task) => void
+  /** Checking the last subtask completes the task. */
+  onToggleSubtask: (task: Task, subId: string) => void
   onRemove: (id: string) => void
   onAdd: (id: string) => void
   onReorder: (ids: string[]) => void
@@ -100,6 +104,7 @@ export function TodayPage({
   today,
   progress,
   onToggleDone,
+  onToggleSubtask,
   onRemove,
   onAdd,
   onReorder,
@@ -212,7 +217,9 @@ export function TodayPage({
         <DailySection
           daily={daily}
           today={today}
+          progress={progress}
           onToggleDone={onToggleDone}
+          onToggleSubtask={onToggleSubtask}
           onReorderDaily={onReorderDaily}
           onOpenTask={onOpenTask}
         />
@@ -243,10 +250,19 @@ export function TodayPage({
 function DailySection({
   daily,
   today,
+  progress,
   onToggleDone,
+  onToggleSubtask,
   onReorderDaily,
   onOpenTask,
-}: Pick<Props, 'daily' | 'today' | 'onToggleDone' | 'onReorderDaily' | 'onOpenTask'>) {
+}: Pick<
+  Props,
+  'daily' | 'today' | 'progress' | 'onToggleDone' | 'onToggleSubtask' | 'onReorderDaily' | 'onOpenTask'
+>) {
+  // Tasks whose subtasks are shown, remembered on this device.
+  const [expanded, setExpanded] = useLocalStorage<string[]>('entretien.dailyExpanded', [])
+  const toggleExpanded = (id: string) =>
+    setExpanded((ids) => (ids.includes(id) ? ids.filter((i) => i !== id) : [...ids, id]))
   const isDone = (r: TodayRow) => r.record?.last === today
   const doneCount = daily.filter(isDone).length
   // Fixed places: checking doesn't move a task; only dragging does.
@@ -271,6 +287,10 @@ function DailySection({
       <ul className="daily-list" ref={listRef}>
         {sorted.map((r) => {
           const done = isDone(r)
+          const subs = r.task.subtasks
+          // Done today: progress was reset for the next cycle, show the whole list as done instead.
+          const checked = done && subs ? subs.map((sub) => sub.id) : (progress[r.task.id] ?? [])
+          const open = !!subs && expanded.includes(r.task.id)
           return (
             <li
               key={r.task.id}
@@ -293,6 +313,33 @@ function DailySection({
                 {done ? '✓' : ''}
               </button>
               <TaskLink task={r.task} onOpen={onOpenTask} className="daily-title" icon />
+              {subs && (
+                <button
+                  className={`daily-expand${open ? ' open' : ''}`}
+                  onClick={() => toggleExpanded(r.task.id)}
+                  aria-expanded={open}
+                  aria-label={`Sous-tâches de ${r.task.title}`}
+                >
+                  {!done && (
+                    <span className="count">
+                      {checked.length}/{subs.length}
+                    </span>
+                  )}
+                  <span className="chevron" aria-hidden>
+                    ▾
+                  </span>
+                </button>
+              )}
+              {open && subs && (
+                <div className="daily-subtasks">
+                  <SubtaskGroups
+                    subtasks={subs}
+                    checked={checked}
+                    disabled={done}
+                    onToggle={(subId) => onToggleSubtask(r.task, subId)}
+                  />
+                </div>
+              )}
             </li>
           )
         })}

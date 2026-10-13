@@ -148,9 +148,6 @@ interface SubtasksProps {
 }
 
 function Subtasks({ subtasks, checked, expanded, onToggleExpanded, onToggle }: SubtasksProps) {
-  const groups = new Map<string, typeof subtasks>()
-  for (const s of subtasks) groups.set(s.group, [...(groups.get(s.group) ?? []), s])
-
   return (
     <div className="subtasks">
       <button className="subtasks-toggle" onClick={onToggleExpanded} aria-expanded={expanded}>
@@ -159,18 +156,35 @@ function Subtasks({ subtasks, checked, expanded, onToggleExpanded, onToggle }: S
         </span>
         Sous-tâches {checked.length}/{subtasks.length} {expanded ? '▴' : '▾'}
       </button>
-      {expanded &&
-        [...groups].map(([group, items]) => (
-          <div key={group} className="subtask-group">
-            <div className="subtask-group-title">{group}</div>
-            {items.map((s) => (
-              <label key={s.id} className="subtask">
-                <input type="checkbox" checked={checked.includes(s.id)} onChange={() => onToggle(s.id)} />
-                <span>{s.title}</span>
-              </label>
-            ))}
-          </div>
-        ))}
+      {expanded && <SubtaskGroups subtasks={subtasks} checked={checked} onToggle={onToggle} />}
     </div>
   )
+}
+
+/** Checkable subtasks, by group. */
+export function SubtaskGroups({
+  subtasks,
+  checked,
+  onToggle,
+  disabled = false,
+}: Pick<SubtasksProps, 'subtasks' | 'checked' | 'onToggle'> & { disabled?: boolean }) {
+  const groups = new Map<string, typeof subtasks>()
+  for (const s of subtasks) groups.set(s.group, [...(groups.get(s.group) ?? []), s])
+
+  return [...groups].map(([group, items]) => (
+    <div key={group} className="subtask-group">
+      <div className="subtask-group-title">{group}</div>
+      {items.map((s) => (
+        <label key={s.id} className="subtask">
+          <input
+            type="checkbox"
+            checked={checked.includes(s.id)}
+            disabled={disabled}
+            onChange={() => onToggle(s.id)}
+          />
+          <span>{s.title}</span>
+        </label>
+      ))}
+    </div>
+  ))
 }

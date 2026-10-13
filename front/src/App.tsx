@@ -461,6 +461,7 @@ export default function App() {
                 today={today}
                 progress={state.progress}
                 onToggleDone={toggleDone}
+                onToggleSubtask={toggleSubtask}
                 onRemove={toggleToday}
                 onAdd={toggleToday}
                 onReorder={reorderToday}

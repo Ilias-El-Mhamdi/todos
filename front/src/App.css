@@ -1067,6 +1067,41 @@ select {
   min-width: 0;
 }
 
+/* Subtasks open below the row. */
+.daily-item:has(.daily-subtasks) {
+  flex-wrap: wrap;
+}
+
+.daily-expand {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-left: auto;
+  padding: 6px 8px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.daily-expand .chevron {
+  transition: transform 0.15s;
+}
+
+.daily-expand.open .chevron {
+  transform: rotate(180deg);
+}
+
+.daily-subtasks {
+  flex-basis: 100%;
+  padding: 0 8px 6px 64px;
+}
+
+.daily-subtasks .subtask-group:first-child {
+  margin-top: 2px;
+}
+
 .task-link {
   padding: 0;
   border: 0;
