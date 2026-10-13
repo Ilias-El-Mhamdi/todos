@@ -3,14 +3,15 @@ import { BackupError, backupFileName, parseBackup, serializeBackup } from '../li
 
 interface Props {
   state: unknown
-  /** Replaces the whole state; gets synced to the server like any edit. */
-  onRestore: (data: Record<string, unknown>) => void
+  /** Replaces the whole state on the server; resolves once it accepted it. */
+  onRestore: (data: Record<string, unknown>) => Promise<void>
 }
 
 /** Download the whole state as a JSON file, or replace it with a previously downloaded one. */
 export function BackupControls({ state, onRestore }: Props) {
   const input = useRef<HTMLInputElement>(null)
   const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null)
+  const [restoring, setRestoring] = useState(false)
 
   const exportBackup = () => {
     const now = new Date()
@@ -25,14 +26,26 @@ export function BackupControls({ state, onRestore }: Props) {
   }
 
   const importBackup = async (file: File) => {
+    let data: Record<string, unknown>
     try {
-      const { data, exportedAt } = parseBackup(await file.text())
-      const date = exportedAt ? new Date(exportedAt).toLocaleString('fr-FR') : 'date inconnue'
+      const backup = parseBackup(await file.text())
+      const date = backup.exportedAt ? new Date(backup.exportedAt).toLocaleString('fr-FR') : 'date inconnue'
       if (!window.confirm(`Remplacer toutes les données actuelles par la sauvegarde du ${date} ?`)) return
-      onRestore(data)
-      setMessage({ text: 'Sauvegarde restaurée' })
+      data = backup.data
     } catch (err) {
       setMessage({ text: err instanceof BackupError ? err.message : 'Impossible de lire le fichier', error: true })
+      return
+    }
+    setRestoring(true)
+    setMessage({ text: 'Restauration…' })
+    try {
+      await onRestore(data)
+      setMessage({ text: 'Sauvegarde restaurée' })
+    } catch (err) {
+      const text = err instanceof TypeError ? 'Serveur injoignable : la restauration demande une connexion' : err instanceof Error ? err.message : 'Échec'
+      setMessage({ text: `Restauration non faite · ${text}`, error: true })
+    } finally {
+      setRestoring(false)
     }
   }
 
@@ -42,7 +55,7 @@ export function BackupControls({ state, onRestore }: Props) {
         Exporter les données
       </button>
       <span aria-hidden>·</span>
-      <button className="link" onClick={() => input.current?.click()}>
+      <button className="link" onClick={() => input.current?.click()} disabled={restoring}>
         Restaurer une sauvegarde
       </button>
       <input

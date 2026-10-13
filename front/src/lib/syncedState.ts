@@ -117,6 +117,40 @@ export function useSyncedState<T>(key: string, initial: T, migrate?: (saved: unk
     }
   }, [key, markDirty, setBase, applyRemote, push])
 
+  /**
+   * Overwrites the server with `next` whatever it holds (backup restore): on a conflict, retries on top of the version
+   * the server returns. Resolves once the server accepted it; rejects otherwise (e.g. offline), leaving state as is.
+   */
+  const replace = useCallback(
+    async (next: T) => {
+      let baseUpdatedAt = base.current
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const res = await apiFetch<{ updatedAt: string }>(`/state/${key}`, {
+            method: 'PUT',
+            body: JSON.stringify({ value: next, baseUpdatedAt }),
+          })
+          synced.current = true
+          setOffline(false)
+          setBase(res.updatedAt)
+          markDirty(false)
+          clean.current = next
+          setValue(next)
+          return
+        } catch (err) {
+          if (err instanceof ApiError && err.status === 409) {
+            baseUpdatedAt = (err.body as Snapshot<unknown>).updatedAt
+            continue
+          }
+          if (err instanceof TypeError) setOffline(true)
+          throw err
+        }
+      }
+      throw new Error('Le serveur a changé pendant la restauration, réessaie')
+    },
+    [key, markDirty, setBase],
+  )
+
   useEffect(() => {
     latest.current = value
     writeLocal(key, value)
@@ -148,5 +182,5 @@ export function useSyncedState<T>(key: string, initial: T, migrate?: (saved: unk
     }
   }, [pull, push])
 
-  return [value, setValue, offline] as const
+  return [value, setValue, offline, replace] as const
 }
