@@ -1842,6 +1842,27 @@ button.danger {
 }
 
 /* Deployed versions */
+.backup-controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 4px 8px;
+  margin-top: 32px;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.backup-message {
+  flex-basis: 100%;
+  margin: 4px 0 0;
+  text-align: center;
+}
+
+.backup-message.error {
+  color: var(--late);
+}
+
 .version-info {
   display: flex;
   flex-direction: column;

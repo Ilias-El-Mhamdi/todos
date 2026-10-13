@@ -5,7 +5,7 @@ import { CATEGORIES, FREQUENCIES, TASKS } from './data/tasks'
 import type { Status } from './lib/frequency'
 import { STATUS_LABELS, STATUS_ORDER, getStatus, toISODate } from './lib/frequency'
 import { Odometer } from './components/Odometer'
-import { useLocalStorage } from './lib/storage'
+import { mergeDefaults, useLocalStorage } from './lib/storage'
 import { useSyncedState } from './lib/syncedState'
 import { parseHash, taskLink } from './lib/route'
 import type { TaskChanges } from './lib/tasks'
@@ -14,6 +14,7 @@ import { TaskForm } from './components/TaskForm'
 import type { Page } from './components/TabBar'
 import { TabBar } from './components/TabBar'
 import { VersionInfo } from './components/VersionInfo'
+import { BackupControls } from './components/BackupControls'
 import { ShoppingPage } from './components/ShoppingPage'
 import { RecipesPage } from './components/RecipesPage'
 import { HabitsView } from './components/HabitsView'
@@ -63,6 +64,20 @@ const migrateState = (saved: unknown) =>
 
 const STORAGE_KEY = 'entretien.v1'
 
+const INITIAL_STATE: State = {
+  done: {},
+  hidden: [],
+  progress: {},
+  changes: NO_CHANGES,
+  today: { date: '', ids: [] },
+  shopping: EMPTY_SHOPPING,
+  recipes: [],
+  habits: EMPTY_HABITS,
+  dailyOrder: [],
+  trips: [],
+  catalog: false,
+}
+
 type Theme = 'dark' | 'light'
 
 const initialFilters: FilterState = {
@@ -97,19 +112,7 @@ function withDone(s: State, task: Task, date: string): State {
 }
 
 export default function App() {
-  const [state, setState, offline] = useSyncedState<State>(STORAGE_KEY, {
-    done: {},
-    hidden: [],
-    progress: {},
-    changes: NO_CHANGES,
-    today: { date: '', ids: [] },
-    shopping: EMPTY_SHOPPING,
-    recipes: [],
-    habits: EMPTY_HABITS,
-    dailyOrder: [],
-    trips: [],
-    catalog: false,
-  }, migrateState)
+  const [state, setState, offline, replaceState] = useSyncedState<State>(STORAGE_KEY, INITIAL_STATE, migrateState)
   const [page, setPage] = useState<Page>(pageFromHash)
   const [todayView, setTodayView] = useLocalStorage<'today' | 'habits'>('entretien.todayView', 'today')
   // undefined task = creating a new one; addToToday puts the created task in Today.
@@ -534,6 +537,8 @@ export default function App() {
           )}
         </>
       )}
+
+      <BackupControls state={state} onRestore={(data) => replaceState(mergeDefaults(INITIAL_STATE, migrateState(data)))} />
 
       <VersionInfo />
 
