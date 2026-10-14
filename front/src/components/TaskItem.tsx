@@ -18,6 +18,7 @@ interface Props {
   onSetKm: (km: number | null) => void
   onToggleHidden: () => void
   onEdit: () => void
+  onRename: (title: string) => void
   inToday: boolean
   onToggleToday: () => void
   checkedSubtasks: string[]
@@ -53,6 +54,7 @@ export function TaskItem({
   onSetKm,
   onToggleHidden,
   onEdit,
+  onRename,
   inToday,
   onToggleToday,
   checkedSubtasks,
@@ -81,7 +83,7 @@ export function TaskItem({
       </button>
 
       <div className="task-body">
-        <div className="task-title">{task.title}</div>
+        <EditableTitle title={task.title} onRename={onRename} />
         {task.note && <div className="task-note">{task.note}</div>}
         <div className="task-meta">
           <span className={`badge cat-${task.category}`}>
@@ -146,6 +148,43 @@ export function TaskItem({
         </span>
       </div>
     </li>
+  )
+}
+
+/** Title editable in place: the pencil turns it into a field, Enter or leaving saves, Escape cancels. */
+function EditableTitle({ title, onRename }: { title: string; onRename: (title: string) => void }) {
+  const [draft, setDraft] = useState<string | null>(null)
+
+  const save = () => {
+    const next = draft?.trim()
+    if (next && next !== title) onRename(next)
+    setDraft(null)
+  }
+
+  if (draft === null)
+    return (
+      <div className="task-title">
+        {title}
+        <button className="title-edit" onClick={() => setDraft(title)} aria-label="Renommer" title="Renommer">
+          ✎
+        </button>
+      </div>
+    )
+
+  return (
+    <input
+      className="task-title-input"
+      value={draft}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={save}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') e.currentTarget.blur()
+        if (e.key === 'Escape') setDraft(null)
+      }}
+      aria-label="Titre de la tâche"
+      enterKeyHint="done"
+      autoFocus
+    />
   )
 }
 

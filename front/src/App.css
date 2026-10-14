@@ -159,29 +159,6 @@ select {
   gap: 6px;
 }
 
-.today-item {
-  display: grid;
-  grid-template-columns: auto auto 1fr auto;
-  gap: 10px;
-  align-items: center;
-  padding: 10px 12px 10px 6px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--surface);
-}
-
-.today-item.dragging {
-  border-color: var(--accent);
-  box-shadow: 0 6px 20px rgb(0 0 0 / 0.25);
-  position: relative;
-  z-index: 1;
-}
-
-.today-item.done .task-title {
-  color: var(--muted);
-  text-decoration: line-through;
-}
-
 .done-section {
   margin-top: 20px;
 }
@@ -219,24 +196,6 @@ select {
 .done-section .today-list {
   margin-top: 6px;
   opacity: 0.75;
-}
-
-.today-body {
-  min-width: 0;
-}
-
-.drag-handle {
-  padding: 6px 4px;
-  border: 0;
-  background: none;
-  color: var(--muted);
-  cursor: grab;
-  touch-action: none;
-  letter-spacing: -2px;
-}
-
-.drag-handle:active {
-  cursor: grabbing;
 }
 
 .remove {
@@ -1483,6 +1442,32 @@ header h1 {
 }
 
 .task-title {
+  font-weight: 500;
+}
+
+.title-edit {
+  margin-left: 4px;
+  padding: 0 6px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 0.9em;
+  vertical-align: baseline;
+  cursor: pointer;
+}
+
+.title-edit:hover {
+  color: var(--accent);
+}
+
+.task-title-input {
+  width: 100%;
+  padding: 4px 8px;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  background: var(--bg);
+  color: inherit;
+  font: inherit;
   font-weight: 500;
 }
 

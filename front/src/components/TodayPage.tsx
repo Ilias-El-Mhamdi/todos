@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { ReactNode } from 'react'
 import type { Task } from '../data/tasks'
 import { CATEGORIES } from '../data/tasks'
 import type { DoneRecord, Status } from '../lib/frequency'
@@ -15,6 +16,8 @@ export interface TodayRow {
 
 interface Props {
   rows: TodayRow[]
+  /** Full task card, as in the task list. */
+  renderTask: (row: TodayRow) => ReactNode
   suggestions: TodayRow[]
   /** Daily tasks, checked straight from Today. */
   daily: TodayRow[]
@@ -26,7 +29,6 @@ interface Props {
   onToggleDone: (task: Task) => void
   /** Checking the last subtask completes the task. */
   onToggleSubtask: (task: Task, subId: string) => void
-  onRemove: (id: string) => void
   onAdd: (id: string) => void
   onReorder: (ids: string[]) => void
   /** Tasks that can be added to Today. */
@@ -97,6 +99,7 @@ function QuickAdd({ candidates, onAdd, onCreate }: Pick<Props, 'candidates' | 'o
 
 export function TodayPage({
   rows,
+  renderTask,
   suggestions,
   daily,
   onOpenTask,
@@ -105,12 +108,12 @@ export function TodayPage({
   progress,
   onToggleDone,
   onToggleSubtask,
-  onRemove,
   onAdd,
   onReorder,
   candidates,
   onCreate,
 }: Props) {
+  const [reordering, setReordering] = useState(false)
   const isDone = (r: TodayRow) => r.record?.last === today
   const pending = rows.filter((r) => !isDone(r))
   const done = rows.filter(isDone)
@@ -121,101 +124,77 @@ export function TodayPage({
   const byId = new Map(rows.map((r) => [r.task.id, r]))
   const doneCount = done.length
 
-  const renderItem = (r: TodayRow, isDoneItem: boolean) => {
-    const id = r.task.id
-    const cat = CATEGORIES[r.task.category]
-    const subs = r.task.subtasks
-    return (
-      <li
-        key={id}
-        data-id={id}
-        className={`today-item${isDoneItem ? ' done' : ''}${draggingId === id ? ' dragging' : ''}`}
-      >
-        {isDoneItem ? (
-          <span className="drag-handle" aria-hidden />
-        ) : (
-          <button className="drag-handle" aria-label="Déplacer" title="Glisser pour réordonner" {...handleProps(id)}>
-            ⋮⋮
-          </button>
-        )}
-        <button
-          className={`check${isDoneItem ? ' checked' : ''}`}
-          onClick={() => onToggleDone(r.task)}
-          aria-label={isDoneItem ? 'Annuler' : 'Valider'}
-        >
-          {isDoneItem ? '✓' : ''}
-        </button>
-        <div className="today-body">
-          <TaskLink task={r.task} onOpen={onOpenTask} className="task-title" />
-          <div className="task-meta">
-            <span className={`badge cat-${r.task.category}`}>
-              {cat.icon} {cat.label}
-            </span>
-            {subs && !isDoneItem && (
-              <span className="badge">
-                Sous-tâches {progress[id]?.length ?? 0}/{subs.length}
-              </span>
-            )}
-          </div>
-        </div>
-        <button className="remove" onClick={() => onRemove(id)} aria-label="Retirer de Today" title="Retirer de Today">
-          ✕
-        </button>
-      </li>
-    )
-  }
-
   return (
     <div className="today-page">
       <div className="today-head">
         <h2>Today</h2>
-        {rows.length > 0 && (
+        {rows.length > 0 && !reordering && (
           <span className="today-count">
             {doneCount}/{rows.length} fait{doneCount > 1 ? 's' : ''}
           </span>
         )}
+        {(pending.length > 1 || daily.length > 1) && (
+          <button className={reordering ? 'primary' : 'secondary'} onClick={() => setReordering(!reordering)}>
+            {reordering ? 'Terminé' : '↕ Ordonner'}
+          </button>
+        )}
       </div>
-      {rows.length > 0 && (
-        <span className="progress today-progress">
-          <span className="progress-bar" style={{ width: `${(doneCount / rows.length) * 100}%` }} />
-        </span>
-      )}
 
-      <QuickAdd candidates={candidates} onAdd={onAdd} onCreate={onCreate} />
-
-      {rows.length === 0 ? (
-        <p className="empty">
-          Rien de prévu aujourd’hui.
-          <br />
-          Cherche une tâche existante ou crée-en une ci-dessus, ou pioche dans les suggestions.
-        </p>
-      ) : (
+      {reordering ? (
         <>
-          {pending.length > 0 ? (
-            <ul className="today-list" ref={listRef}>
+          <p className="hint reorder-hint">Fais glisser les tâches pour les ranger dans l’ordre voulu.</p>
+          {pending.length > 1 && (
+            <ul className="habit-list" ref={listRef}>
               {order.map((id) => {
                 const r = byId.get(id)
-                return r ? renderItem(r, false) : null
+                return r ? (
+                  <ReorderRow key={id} task={r.task} dragging={draggingId === id} handleProps={handleProps(id)} />
+                ) : null
               })}
             </ul>
-          ) : (
-            <p className="empty">Tout est fait pour aujourd’hui 🎉</p>
+          )}
+        </>
+      ) : (
+        <>
+          {rows.length > 0 && (
+            <span className="progress today-progress">
+              <span className="progress-bar" style={{ width: `${(doneCount / rows.length) * 100}%` }} />
+            </span>
           )}
 
-          {done.length > 0 && (
-            <details className="done-section">
-              <summary>
-                Faits <span className="count">{done.length}</span>
-              </summary>
-              <ul className="today-list">{done.map((r) => renderItem(r, true))}</ul>
-            </details>
+          <QuickAdd candidates={candidates} onAdd={onAdd} onCreate={onCreate} />
+
+          {rows.length === 0 ? (
+            <p className="empty">
+              Rien de prévu aujourd’hui.
+              <br />
+              Cherche une tâche existante ou crée-en une ci-dessus, ou pioche dans les suggestions.
+            </p>
+          ) : (
+            <>
+              {pending.length > 0 ? (
+                <ul className="today-list">{pending.map(renderTask)}</ul>
+              ) : (
+                <p className="empty">Tout est fait pour aujourd’hui 🎉</p>
+              )}
+
+              {done.length > 0 && (
+                <details className="done-section">
+                  <summary>
+                    Faits <span className="count">{done.length}</span>
+                  </summary>
+                  <ul className="today-list">{done.map(renderTask)}</ul>
+                </details>
+              )}
+            </>
           )}
         </>
       )}
 
-      {daily.length > 0 && (
+      {daily.length > (reordering ? 1 : 0) && (
         <DailySection
           daily={daily}
+          reordering={reordering}
           today={today}
           progress={progress}
           onToggleDone={onToggleDone}
@@ -225,7 +204,7 @@ export function TodayPage({
         />
       )}
 
-      {suggestions.length > 0 && (
+      {suggestions.length > 0 && !reordering && (
         <section className="group">
           <h2>
             Suggestions <span className="count">en retard ou dues aujourd’hui</span>
@@ -247,8 +226,31 @@ export function TodayPage({
   )
 }
 
+/** Reorder mode row, as in Habits: compact, the whole row is the drag handle. */
+function ReorderRow({
+  task,
+  dragging,
+  handleProps,
+}: {
+  task: Task
+  dragging: boolean
+  handleProps: ReturnType<ReturnType<typeof useDragReorder>['handleProps']>
+}) {
+  return (
+    <li data-id={task.id} className={`habit-reorder${dragging ? ' dragging' : ''}`} {...handleProps}>
+      <span className="drag-grip" aria-hidden>
+        ⋮⋮
+      </span>
+      <span className="habit-name">
+        {CATEGORIES[task.category].icon} {task.title}
+      </span>
+    </li>
+  )
+}
+
 function DailySection({
   daily,
+  reordering,
   today,
   progress,
   onToggleDone,
@@ -258,7 +260,7 @@ function DailySection({
 }: Pick<
   Props,
   'daily' | 'today' | 'progress' | 'onToggleDone' | 'onToggleSubtask' | 'onReorderDaily' | 'onOpenTask'
->) {
+> & { reordering: boolean }) {
   // Tasks whose subtasks are shown, remembered on this device.
   const [expanded, setExpanded] = useLocalStorage<string[]>('entretien.dailyExpanded', [])
   const toggleExpanded = (id: string) =>
@@ -273,6 +275,23 @@ function DailySection({
   const byId = new Map(daily.map((r) => [r.task.id, r]))
   const sorted = order.flatMap((id) => byId.get(id) ?? [])
 
+  if (reordering)
+    return (
+      <section className="group daily-section">
+        <h2>🔁 Quotidien</h2>
+        <ul className="habit-list" ref={listRef}>
+          {sorted.map((r) => (
+            <ReorderRow
+              key={r.task.id}
+              task={r.task}
+              dragging={draggingId === r.task.id}
+              handleProps={handleProps(r.task.id)}
+            />
+          ))}
+        </ul>
+      </section>
+    )
+
   return (
     <section className="group daily-section">
       <h2>
@@ -284,7 +303,7 @@ function DailySection({
       <span className="progress today-progress">
         <span className="progress-bar" style={{ width: `${(doneCount / daily.length) * 100}%` }} />
       </span>
-      <ul className="daily-list" ref={listRef}>
+      <ul className="daily-list">
         {sorted.map((r) => {
           const done = isDone(r)
           const subs = r.task.subtasks
@@ -292,19 +311,7 @@ function DailySection({
           const checked = done && subs ? subs.map((sub) => sub.id) : (progress[r.task.id] ?? [])
           const open = !!subs && expanded.includes(r.task.id)
           return (
-            <li
-              key={r.task.id}
-              data-id={r.task.id}
-              className={`daily-item${done ? ' done' : ''}${draggingId === r.task.id ? ' dragging' : ''}`}
-            >
-              <button
-                className="drag-handle"
-                aria-label="Déplacer"
-                title="Glisser pour réordonner"
-                {...handleProps(r.task.id)}
-              >
-                ⋮⋮
-              </button>
+            <li key={r.task.id} className={`daily-item${done ? ' done' : ''}`}>
               <button
                 className={`check${done ? ' checked' : ''}`}
                 onClick={() => onToggleDone(r.task)}

@@ -109,6 +109,14 @@ const pageFromHash = (): Page => PAGES.find((p) => parseHash(window.location.has
 
 const BUILTIN_IDS = new Set(TASKS.map((t) => t.id))
 
+/** Saves a created or edited task in the user's changes. */
+function withTask(c: TaskChanges, task: Task): TaskChanges {
+  if (BUILTIN_IDS.has(task.id)) return { ...c, edited: { ...c.edited, [task.id]: task } }
+  return c.added.some((t) => t.id === task.id)
+    ? { ...c, added: c.added.map((t) => (t.id === task.id ? task : t)) }
+    : { ...c, added: [...c.added, task] }
+}
+
 /** Records `date` as the latest completion, snapshotting the odometer for mileage-based tasks. */
 function withDone(s: State, task: Task, date: string): State {
   const id = task.id
@@ -307,12 +315,7 @@ export default function App() {
 
   const saveTask = (task: Task) => {
     setState((s) => {
-      const c = s.changes
-      const changes: TaskChanges = BUILTIN_IDS.has(task.id)
-        ? { ...c, edited: { ...c.edited, [task.id]: task } }
-        : c.added.some((t) => t.id === task.id)
-          ? { ...c, added: c.added.map((t) => (t.id === task.id ? task : t)) }
-          : { ...c, added: [...c.added, task] }
+      const changes = withTask(s.changes, task)
       // Drop progress on subtasks that no longer exist.
       const progress = { ...s.progress }
       const subIds = new Set(task.subtasks?.map((sub) => sub.id))
@@ -323,6 +326,9 @@ export default function App() {
     })
     setEditing(null)
   }
+
+  const renameTask = (task: Task, title: string) =>
+    setState((s) => ({ ...s, changes: withTask(s.changes, { ...task, title }) }))
 
   const removeTaskAttachment = async (taskId: string, attachment: Attachment) => {
     try {
@@ -396,6 +402,31 @@ export default function App() {
       ...s,
       hidden: s.hidden.includes(id) ? s.hidden.filter((h) => h !== id) : [...s.hidden, id],
     }))
+
+  const renderTaskItem = (r: Row) => (
+    <TaskItem
+      key={r.task.id}
+      task={r.task}
+      record={r.record}
+      odometer={state.odometer?.km}
+      status={r.status}
+      today={today}
+      hidden={r.hidden}
+      onToggleDone={() => toggleDone(r.task)}
+      onSetLast={(d) => setLast(r.task, d)}
+      onEdit={() => setEditing({ task: r.task })}
+      onRename={(title) => renameTask(r.task, title)}
+      onSetKm={(km) => setKm(r.task.id, km)}
+      onToggleHidden={() => toggleHidden(r.task.id)}
+      inToday={state.today.ids.includes(r.task.id)}
+      onToggleToday={() => toggleToday(r.task.id)}
+      checkedSubtasks={state.progress[r.task.id] ?? []}
+      onToggleSubtask={(subId) => toggleSubtask(r.task, subId)}
+      attachments={state.attachments[r.task.id] ?? []}
+      onAddAttachment={(a) => setState((s) => ({ ...s, attachments: addAttachment(s.attachments, r.task.id, a) }))}
+      onRemoveAttachment={(a) => void removeTaskAttachment(r.task.id, a)}
+    />
+  )
 
   return (
     <main className="app">
@@ -475,6 +506,7 @@ export default function App() {
             ) : (
               <TodayPage
                 rows={todayRows}
+                renderTask={(r) => renderTaskItem(r as Row)}
                 suggestions={suggestions}
                 daily={dailyRows}
                 onOpenTask={(task) => {
@@ -485,7 +517,6 @@ export default function App() {
                 progress={state.progress}
                 onToggleDone={toggleDone}
                 onToggleSubtask={toggleSubtask}
-                onRemove={toggleToday}
                 onAdd={toggleToday}
                 onReorder={reorderToday}
                 candidates={rows.filter((r) => !r.hidden && !state.today.ids.includes(r.task.id))}
@@ -533,33 +564,7 @@ export default function App() {
               <h2>
                 {g.label} <span className="count">{g.rows.length}</span>
               </h2>
-              <ul>
-                {g.rows.map((r) => (
-                  <TaskItem
-                    key={r.task.id}
-                    task={r.task}
-                    record={r.record}
-                    odometer={state.odometer?.km}
-                    status={r.status}
-                    today={today}
-                    hidden={r.hidden}
-                    onToggleDone={() => toggleDone(r.task)}
-                    onSetLast={(d) => setLast(r.task, d)}
-                    onEdit={() => setEditing({ task: r.task })}
-                    onSetKm={(km) => setKm(r.task.id, km)}
-                    onToggleHidden={() => toggleHidden(r.task.id)}
-                    inToday={state.today.ids.includes(r.task.id)}
-                    onToggleToday={() => toggleToday(r.task.id)}
-                    checkedSubtasks={state.progress[r.task.id] ?? []}
-                    onToggleSubtask={(subId) => toggleSubtask(r.task, subId)}
-                    attachments={state.attachments[r.task.id] ?? []}
-                    onAddAttachment={(a) =>
-                      setState((s) => ({ ...s, attachments: addAttachment(s.attachments, r.task.id, a) }))
-                    }
-                    onRemoveAttachment={(a) => void removeTaskAttachment(r.task.id, a)}
-                  />
-                ))}
-              </ul>
+              <ul>{g.rows.map(renderTaskItem)}</ul>
             </section>
           ))}
 
