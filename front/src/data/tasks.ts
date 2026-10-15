@@ -10,6 +10,7 @@ export type Category =
   | 'prevoyance'
   | 'business'
   | 'hygiene'
+  | 'travaux'
   | 'autre'
 
 export type Frequency =
@@ -59,6 +60,7 @@ export const CATEGORIES: Record<Category, { label: string; icon: string }> = {
   prevoyance: { label: 'Prévoyance', icon: '🛡️' },
   business: { label: 'Business', icon: '🏢' },
   hygiene: { label: 'Hygiène & soins', icon: '🪥' },
+  travaux: { label: 'Travaux', icon: '🔨' },
   autre: { label: 'Autre', icon: '📌' },
 }
 
