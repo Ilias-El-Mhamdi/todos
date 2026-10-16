@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getStatus, nextDue, nextDueKm } from './frequency'
+import { countdown, getStatus, nextDue, nextDueKm } from './frequency'
 
 const today = '2026-10-11'
 
@@ -90,5 +90,20 @@ describe('getStatus', () => {
     expect(getStatus(service, record, today, 116_000)).toBe('en-retard')
     expect(nextDueKm(service, record)).toBe(115_000)
     expect(nextDueKm(service, { last: '2026-06-01' })).toBeNull()
+  })
+})
+
+describe('countdown', () => {
+  it('counts days up to 31, months beyond', () => {
+    expect(countdown('2026-10-11', today)).toBe('J-0')
+    expect(countdown('2026-10-14', today)).toBe('J-3')
+    expect(countdown('2026-11-11', today)).toBe('J-31')
+    expect(countdown('2026-11-12', today)).toBe('M-1')
+    expect(countdown('2027-04-11', today)).toBe('M-6')
+  })
+
+  it('counts up once overdue', () => {
+    expect(countdown('2026-10-09', today)).toBe('J+2')
+    expect(countdown('2026-07-11', today)).toBe('M+3')
   })
 })

@@ -75,6 +75,14 @@ function daysBetween(from: string, to: string): number {
   return Math.round((parse(to).getTime() - parse(from).getTime()) / 86_400_000)
 }
 
+/** Countdown to a due date: J-x up to 31 days, M-x beyond; J+x / M+x once overdue. */
+export function countdown(due: string, today: string): string {
+  const days = daysBetween(today, due)
+  const sign = days < 0 ? '+' : '-'
+  const abs = Math.abs(days)
+  return abs <= 31 ? `J${sign}${abs}` : `M${sign}${Math.round(abs / 30.44)}`
+}
+
 /** Next MM-DD anchor still to do. Never done: anchors from the last 30 days are still pending. */
 function nextAnchor(dates: string[], last: string | undefined, today: string): string | null {
   if (!dates.length) return null

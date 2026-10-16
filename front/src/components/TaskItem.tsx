@@ -2,7 +2,7 @@ import { useState } from 'react'
 import type { Task } from '../data/tasks'
 import { CATEGORIES, FREQUENCIES } from '../data/tasks'
 import type { DoneRecord, Status } from '../lib/frequency'
-import { STATUS_LABELS, nextDue, nextDueKm } from '../lib/frequency'
+import { STATUS_LABELS, countdown, nextDue, nextDueKm } from '../lib/frequency'
 import type { Attachment } from '../lib/attachments'
 import { AttachButton, AttachmentList } from './Attachments'
 
@@ -93,7 +93,7 @@ export function TaskItem({
           {!isChecklist && <span className={`badge status-badge-${status}`}>{STATUS_LABELS[status]}</span>}
           {due && (
             <span className="due">
-              Prochaine : {formatDate(due)}
+              Prochaine : {formatDate(due)} ({countdown(due, today)})
               {dueKm != null && ` ou ${formatKm(dueKm)}`}
               {dueKm != null && odometer != null && ` (reste ${formatKm(Math.max(0, dueKm - odometer))})`}
             </span>
