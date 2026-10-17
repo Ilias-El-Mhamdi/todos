@@ -2067,3 +2067,8 @@ button.danger {
   opacity: 1;
   border-color: currentColor;
 }
+
+.priority-filter .chip { font-weight: 600; }
+.priority-filter .chip.priority-1:not(.active) { color: var(--late); }
+.priority-filter .chip.priority-2:not(.active) { color: var(--today); }
+.priority-filter .chip.priority-3:not(.active) { color: var(--soon); }

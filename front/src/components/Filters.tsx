@@ -1,12 +1,17 @@
-import type { Category, Frequency } from '../data/tasks'
-import { CATEGORIES, FREQUENCIES } from '../data/tasks'
+import type { Category, Frequency, Priority } from '../data/tasks'
+import { CATEGORIES, FREQUENCIES, PRIORITIES } from '../data/tasks'
 
 export type GroupBy = 'urgence' | 'frequence' | 'categorie'
+
+/** A priority, or 'none' for tasks without one. */
+export type PriorityFilter = Priority | 'none'
 
 export interface FilterState {
   groupBy: GroupBy
   category: Category | null
   frequency: Frequency | null
+  /** Empty = all priorities. */
+  priorities: PriorityFilter[]
   search: string
   showHidden: boolean
 }
@@ -22,8 +27,14 @@ const GROUPS: Record<GroupBy, string> = {
   categorie: 'Catégorie',
 }
 
+const PRIORITY_FILTERS: PriorityFilter[] = [...PRIORITIES, 'none']
+
 export function Filters({ value, onChange }: Props) {
   const set = (patch: Partial<FilterState>) => onChange({ ...value, ...patch })
+  const togglePriority = (p: PriorityFilter) =>
+    set({
+      priorities: value.priorities.includes(p) ? value.priorities.filter((x) => x !== p) : [...value.priorities, p],
+    })
 
   return (
     <div className="filters">
@@ -46,6 +57,22 @@ export function Filters({ value, onChange }: Props) {
             onClick={() => set({ category: value.category === c ? null : c })}
           >
             {CATEGORIES[c].icon} {CATEGORIES[c].label}
+          </button>
+        ))}
+      </div>
+
+      <div className="chips priority-filter" role="group" aria-label="Priorité">
+        <button className={`chip${value.priorities.length === 0 ? ' active' : ''}`} onClick={() => set({ priorities: [] })}>
+          Toutes priorités
+        </button>
+        {PRIORITY_FILTERS.map((p) => (
+          <button
+            key={p}
+            className={`chip${p === 'none' ? '' : ` priority-${p}`}${value.priorities.includes(p) ? ' active' : ''}`}
+            aria-pressed={value.priorities.includes(p)}
+            onClick={() => togglePriority(p)}
+          >
+            {p === 'none' ? 'Sans' : `P${p}`}
           </button>
         ))}
       </div>

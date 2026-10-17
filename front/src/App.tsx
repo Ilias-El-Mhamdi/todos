@@ -90,6 +90,7 @@ const initialFilters: FilterState = {
   groupBy: 'urgence',
   category: null,
   frequency: null,
+  priorities: [],
   search: '',
   showHidden: false,
 }
@@ -245,6 +246,7 @@ export default function App() {
       .filter((r) => (filters.showHidden ? r.hidden : !r.hidden))
       .filter((r) => !filters.category || r.task.category === filters.category)
       .filter((r) => !filters.frequency || r.task.frequency === filters.frequency)
+      .filter((r) => !filters.priorities.length || filters.priorities.includes(r.task.priority ?? 'none'))
       .filter((r) => !statusFilter || r.status === statusFilter)
       .filter((r) => !q || `${r.task.title} ${r.task.note ?? ''}`.toLowerCase().includes(q))
       .sort(
