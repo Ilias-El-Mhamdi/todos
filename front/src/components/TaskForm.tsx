@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import type { Category, Frequency, Task } from '../data/tasks'
-import { CATEGORIES, FREQUENCIES } from '../data/tasks'
+import type { Category, Frequency, Priority, Task } from '../data/tasks'
+import { CATEGORIES, FREQUENCIES, PRIORITIES } from '../data/tasks'
 import { formatDates, formatSubtasks, newTaskId, parseDates, parseSubtasks } from '../lib/tasks'
 
 interface Props {
@@ -24,6 +24,7 @@ export function TaskForm({ task, defaults, canReset, onSave, onDelete, onReset, 
   const [frequency, setFrequency] = useState<Frequency>(task?.frequency ?? defaults?.frequency ?? 'monthly')
   const [dates, setDates] = useState(formatDates(task?.dates))
   const [km, setKm] = useState(task?.km ? String(task.km) : '')
+  const [priority, setPriority] = useState<Priority | undefined>(task?.priority)
   const [subtasks, setSubtasks] = useState(formatSubtasks(task?.subtasks))
   const [error, setError] = useState<string | null>(null)
 
@@ -51,6 +52,7 @@ export function TaskForm({ task, defaults, canReset, onSave, onDelete, onReset, 
       dates: frequency === 'fixed' ? parsedDates : undefined,
       km: kmValue && frequency !== 'once' && frequency !== 'trigger' ? Math.round(kmValue) : undefined,
       subtasks: parseSubtasks(subtasks, task?.subtasks),
+      priority,
     })
   }
 
@@ -96,6 +98,27 @@ export function TaskForm({ task, defaults, canReset, onSave, onDelete, onReset, 
               ))}
             </select>
           </label>
+        </div>
+
+        <div className="priority-field">
+          <span>
+            Priorité <span className="hint">(optionnel, 1 = la plus haute)</span>
+          </span>
+          <div className="priority-picker" role="radiogroup" aria-label="Priorité">
+            {PRIORITIES.map((p) => (
+              <button
+                key={p}
+                type="button"
+                role="radio"
+                aria-checked={priority === p}
+                className={`priority-badge priority-${p}${priority === p ? ' selected' : ''}`}
+                // Tapping the selected one clears it.
+                onClick={() => setPriority(priority === p ? undefined : p)}
+              >
+                P{p}
+              </button>
+            ))}
+          </div>
         </div>
 
         {frequency === 'fixed' && (

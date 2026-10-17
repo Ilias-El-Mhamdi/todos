@@ -2033,3 +2033,37 @@ button.danger {
 .attachment-bar .primary {
   margin-left: auto;
 }
+
+/* Priority: 1 (highest) to 5. */
+.priority-badge { font-weight: 600; }
+.priority-badge.priority-1 { background: var(--late-bg); color: var(--late); }
+.priority-badge.priority-2 { background: var(--today-bg); color: var(--today); }
+.priority-badge.priority-3 { background: var(--soon-bg); color: var(--soon); }
+.priority-badge.priority-4,
+.priority-badge.priority-5 { background: var(--todo-bg); color: var(--muted); }
+
+.priority-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.priority-picker {
+  display: flex;
+  gap: 8px;
+}
+
+.priority-picker .priority-badge {
+  min-width: 44px;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  opacity: 0.55;
+  cursor: pointer;
+}
+
+.priority-picker .priority-badge.selected {
+  opacity: 1;
+  border-color: currentColor;
+}

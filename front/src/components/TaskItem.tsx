@@ -86,6 +86,11 @@ export function TaskItem({
         <EditableTitle title={task.title} onRename={onRename} />
         {task.note && <div className="task-note">{task.note}</div>}
         <div className="task-meta">
+          {task.priority && (
+            <span className={`badge priority-badge priority-${task.priority}`} title={`Priorité ${task.priority}`}>
+              P{task.priority}
+            </span>
+          )}
           <span className={`badge cat-${task.category}`}>
             {cat.icon} {cat.label}
           </span>

@@ -46,7 +46,13 @@ export interface Task {
   /** Mileage interval: due at whichever comes first, date or km. */
   km?: number
   subtasks?: Subtask[]
+  /** 1 (highest) to 5. */
+  priority?: Priority
 }
+
+export type Priority = 1 | 2 | 3 | 4 | 5
+
+export const PRIORITIES: Priority[] = [1, 2, 3, 4, 5]
 
 export const CATEGORIES: Record<Category, { label: string; icon: string }> = {
   appartement: { label: 'Appartement', icon: '🏠' },

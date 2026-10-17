@@ -107,6 +107,12 @@ const TODAY_VIEWS: TodayView[] = ['today', 'habits']
 const PAGES: Page[] = ['today', 'tasks', 'courses', 'voyages']
 const pageFromHash = (): Page => PAGES.find((p) => parseHash(window.location.hash).path === p) ?? 'today'
 
+// Task list order: most frequent first, then one-offs and checklists.
+const LAST: Frequency[] = ['once', 'trigger']
+const FREQUENCY_RANK = Object.fromEntries(
+  [...(Object.keys(FREQUENCIES) as Frequency[]).filter((f) => !LAST.includes(f)), ...LAST].map((f, i) => [f, i]),
+) as Record<Frequency, number>
+
 const BUILTIN_IDS = new Set(TASKS.map((t) => t.id))
 
 /** Saves a created or edited task in the user's changes. */
@@ -241,7 +247,11 @@ export default function App() {
       .filter((r) => !filters.frequency || r.task.frequency === filters.frequency)
       .filter((r) => !statusFilter || r.status === statusFilter)
       .filter((r) => !q || `${r.task.title} ${r.task.note ?? ''}`.toLowerCase().includes(q))
-      .sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status])
+      .sort(
+        (a, b) =>
+          FREQUENCY_RANK[a.task.frequency] - FREQUENCY_RANK[b.task.frequency] ||
+          (a.task.priority ?? 6) - (b.task.priority ?? 6),
+      )
   }, [rows, filters, statusFilter])
 
   const groups = useMemo(() => {
