@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { addQty, formatQty, missingQty, parseEntry } from './quantity'
+import { addQty, formatQty, missingQty, parseEntry, stepQty } from './quantity'
 
 describe('parseEntry', () => {
   it('reads a leading quantity', () => {
@@ -50,5 +50,14 @@ describe('addQty / missingQty', () => {
     expect(missingQty({ qty: 6, unit: '' }, { qty: 3, unit: '' })).toEqual({ qty: 0, unit: '' })
     expect(missingQty({ qty: 1, unit: 'L' }, { qty: 3, unit: '' })).toBeNull()
     expect(missingQty({}, { qty: 3, unit: '' })).toBeNull()
+  })
+})
+
+describe('stepQty', () => {
+  it('steps by unit, from zero when unset, never below zero', () => {
+    expect(stepQty({}, 1)).toEqual({ qty: 1, unit: '' })
+    expect(stepQty({ qty: 500, unit: 'g' }, 1)).toEqual({ qty: 600, unit: 'g' })
+    expect(stepQty({ qty: 0.2, unit: 'L' }, -1)).toEqual({ qty: 0, unit: 'L' })
+    expect(stepQty({ qty: 1.5, unit: 'kg' }, -1)).toEqual({ qty: 1, unit: 'kg' })
   })
 })

@@ -1,6 +1,19 @@
 import { useState, type ReactNode } from 'react'
-import type { Aisle, ShoppingItem, ShoppingState } from '../lib/shopping'
-import { AISLES, addItem, clearChecked, forget, setAisle, setItemQty, stockLevel, suggestions } from '../lib/shopping'
+import type { Aisle, Restock, ShoppingItem, ShoppingState } from '../lib/shopping'
+import {
+  AISLES,
+  LEVELS,
+  addItem,
+  clearChecked,
+  forget,
+  planRestock,
+  setAisle,
+  setItemQty,
+  stepItemQty,
+  stockLevel,
+  suggestions,
+} from '../lib/shopping'
+import type { Quantity } from '../lib/quantity'
 import { formatQty, parseEntry } from '../lib/quantity'
 import { QtyEditor } from './QtyEditor'
 import { StockView } from './StockView'
@@ -46,6 +59,7 @@ export function ShoppingPage({ shopping, update, recipes }: Props & { recipes: R
 function ShoppingList({ shopping, update }: Props) {
   const [query, setQuery] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [reviewing, setReviewing] = useState(false)
   const pending = shopping.items.filter((i) => !i.checked)
   const basket = shopping.items.filter((i) => i.checked)
   const matches = query.trim() ? suggestions(shopping, query, 5) : []
@@ -117,7 +131,7 @@ function ShoppingList({ shopping, update }: Props) {
       </button>
       {editingId === item.id && (
         <div className="item-editor">
-          <QtyEditor value={item} onChange={(q) => update((s) => setItemQty(s, item.id, q))} />
+          <QtyStepper item={item} update={update} />
           <button className="secondary" onClick={() => setEditingId(null)}>
             OK
           </button>
@@ -125,6 +139,16 @@ function ShoppingList({ shopping, update }: Props) {
       )}
     </li>
   )
+
+  if (reviewing && basket.length > 0) {
+    return (
+      <RestockReview
+        shopping={shopping}
+        update={update}
+        onDone={() => setReviewing(false)}
+      />
+    )
+  }
 
   return (
     <>
@@ -231,7 +255,7 @@ function ShoppingList({ shopping, update }: Props) {
       {shopping.items.length > 0 && (
         <div className="shop-actions">
           {basket.length > 0 && (
-            <button className="primary" onClick={() => update(clearChecked)}>
+            <button className="primary" onClick={() => setReviewing(true)}>
               Courses terminées ({basket.length})
             </button>
           )}
@@ -240,6 +264,82 @@ function ShoppingList({ shopping, update }: Props) {
           </button>
         </div>
       )}
+    </>
+  )
+}
+
+/** −/+ around the quantity editor, for one-thumb adjustments in the shop. */
+function QtyStepper({ item, update }: { item: ShoppingItem; update: Props['update'] }) {
+  const step = (direction: 1 | -1) => update((s) => stepItemQty(s, item.id, direction))
+  return (
+    <span className="qty-stepper item-stepper" role="group" aria-label={`Quantité de ${item.name}`}>
+      <button onClick={() => step(-1)} aria-label="Moins" disabled={!item.qty}>
+        −
+      </button>
+      <QtyEditor value={item} onChange={(q: Quantity) => update((s) => setItemQty(s, item.id, q))} />
+      <button onClick={() => step(1)} aria-label="Plus">
+        +
+      </button>
+    </span>
+  )
+}
+
+const stockText = (st: Restock['before']) =>
+  st && (st.qty !== undefined ? formatQty({ qty: st.qty, unit: st.unit ?? '' }) : LEVELS[stockLevel(st)].label)
+
+/** End of shopping: check bought quantities and what the stock becomes before validating. */
+function RestockReview({ shopping, update, onDone }: Props & { onDone: () => void }) {
+  // Untracked products the user chose to start tracking (or not), by item id.
+  const [track, setTrack] = useState<Record<string, boolean>>({})
+  const plan = planRestock(shopping, track)
+  const finish = () => {
+    update((s) => clearChecked(s, track))
+    onDone()
+  }
+
+  return (
+    <>
+      <div className="today-head">
+        <h2>Fin des courses</h2>
+        <span className="today-count">
+          {plan.length} article{plan.length > 1 ? 's' : ''}
+        </span>
+      </div>
+      <p className="review-hint">Ajuste les quantités achetées : elles seront ajoutées au stock.</p>
+      <ul className="shop-list restock-list">
+        {plan.map(({ item, before, after }) => (
+          <li key={item.id} className="restock-item">
+            <div className="restock-head">
+              <span className="restock-name">{item.name}</span>
+              <QtyStepper item={item} update={update} />
+            </div>
+            <div className="restock-effect">
+              {before ? (
+                <>
+                  🏠 {stockText(before)} → <strong>{stockText(after)}</strong>
+                </>
+              ) : (
+                <label className="restock-track">
+                  <input
+                    type="checkbox"
+                    checked={after !== undefined}
+                    onChange={(e) => setTrack((t) => ({ ...t, [item.id]: e.target.checked }))}
+                  />
+                  {after ? <>Ajouter au stock{after.qty !== undefined && <> ({stockText(after)})</>}</> : 'Suivre en stock'}
+                </label>
+              )}
+            </div>
+          </li>
+        ))}
+      </ul>
+      <div className="shop-actions review-actions">
+        <button className="primary" onClick={finish}>
+          ✓ Valider et mettre à jour le stock
+        </button>
+        <button className="secondary" onClick={onDone}>
+          Retour
+        </button>
+      </div>
     </>
   )
 }

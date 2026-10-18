@@ -1,5 +1,5 @@
 import type { Quantity, Unit } from './quantity'
-import { addQty } from './quantity'
+import { addQty, stepQty } from './quantity'
 
 export type Aisle =
   | 'fruits-legumes'
@@ -191,22 +191,51 @@ export function setItemQty(state: ShoppingState, id: string, quantity: Quantity)
   }
 }
 
-/** Removes checked items, records them in the history and marks them back in stock. */
-export function clearChecked(state: ShoppingState): ShoppingState {
+/** One stepper tap on an item's quantity, from its current value (rapid taps add up). */
+export function stepItemQty(state: ShoppingState, id: string, direction: 1 | -1): ShoppingState {
+  const item = state.items.find((i) => i.id === id)
+  return item ? setItemQty(state, id, stepQty(item, direction)) : state
+}
+
+/** What finishing the shopping does to the stock for one bought item. */
+export interface Restock {
+  item: ShoppingItem
+  /** Stock entry before (absent for a product not tracked yet). */
+  before?: StockItem
+  /** Stock entry after; absent when the product stays untracked. */
+  after?: StockItem
+}
+
+/**
+ * Stock changes for the items in the basket. Tracked products are restocked; untracked ones
+ * join the stock when `track[item.id]` says so, by default when a quantity was bought.
+ */
+export function planRestock(state: ShoppingState, track: Record<string, boolean> = {}): Restock[] {
+  return state.items
+    .filter((i) => i.checked)
+    .map((item) => {
+      const before = findStock(state, item.name)
+      if (before) return { item, before, after: restock(before, item) }
+      if (!(track[item.id] ?? item.qty !== undefined)) return { item }
+      return { item, after: newStockItem(item) }
+    })
+}
+
+/** Removes checked items, records them in the history and adds what was bought to the stock. */
+export function clearChecked(state: ShoppingState, track: Record<string, boolean> = {}): ShoppingState {
   const history = { ...state.history }
-  const bought = state.items.filter((i) => i.checked)
-  for (const item of bought) {
+  const plan = planRestock(state, track)
+  for (const { item } of plan) {
     const key = normalize(item.name)
     history[key] = { name: item.name, aisle: item.aisle, count: (history[key]?.count ?? 0) + 1 }
   }
+  const updated = new Map(plan.filter((r) => r.before && r.after).map((r) => [r.before!.id, r.after!]))
+  const added = plan.filter((r) => !r.before && r.after).map((r) => r.after!)
   return {
     ...state,
     items: state.items.filter((i) => !i.checked),
     history,
-    stock: state.stock.map((st) => {
-      const item = bought.find((i) => sameItem(i.name, st.name))
-      return item ? restock(st, item) : st
-    }),
+    stock: [...state.stock.map((st) => updated.get(st.id) ?? st), ...added],
   }
 }
 
@@ -238,13 +267,24 @@ export function suggestions(state: ShoppingState, query = '', limit = 8): Histor
 
 /**
  * Back to OK after buying. Counted items add the bought quantity when known and compatible,
- * otherwise go just above their threshold.
+ * otherwise go just above their threshold. An empty uncounted item starts being counted
+ * with the bought quantity, since that's exactly what's at home.
  */
 function restock(st: StockItem, bought: Quantity): StockItem {
-  if (st.qty === undefined) return { ...st, level: 'ok' }
+  if (st.qty === undefined) {
+    if (stockLevel(st) === 'vide' && bought.qty !== undefined) return { ...st, level: 'ok', qty: bought.qty, unit: bought.unit ?? '' }
+    return { ...st, level: 'ok' }
+  }
   const sum = bought.qty !== undefined ? addQty({ qty: st.qty, unit: st.unit ?? '' }, bought) : null
   if (sum?.qty !== undefined) return { ...st, qty: sum.qty }
   return { ...st, qty: Math.max(st.qty, (st.min ?? DEFAULT_MIN) + 1) }
+}
+
+/** Stock entry for a product bought for the first time: counted when the quantity is known. */
+function newStockItem(item: ShoppingItem): StockItem {
+  const base: StockItem = { id: newItemId(), name: item.name, location: LOCATION_BY_AISLE[item.aisle], level: 'ok' }
+  // Alert only once it runs out: the usual amount isn't known yet.
+  return item.qty === undefined ? base : { ...base, qty: item.qty, unit: item.unit ?? '', min: 0 }
 }
 
 const LOCATION_BY_AISLE: Record<Aisle, Location> = {

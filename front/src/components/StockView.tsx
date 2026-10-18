@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { Unit } from '../lib/quantity'
+import { stepQty } from '../lib/quantity'
 import { QtyEditor } from './QtyEditor'
 import type { Level, Location, ShoppingState, StockItem } from '../lib/shopping'
 import {
@@ -36,9 +36,6 @@ const matchesStatus = (st: StockItem, filter: StatusFilter) => {
   const level = stockLevel(st)
   return filter === 'all' || (filter === 'missing' ? level !== 'ok' : level === filter)
 }
-
-// Stepper increment per unit: one by one for counts, sensible chunks for weights and volumes.
-const STEP: Record<Unit, number> = { '': 1, g: 100, kg: 0.5, ml: 100, cl: 10, L: 0.5 }
 
 export function StockView({ shopping, update }: Props) {
   const [query, setQuery] = useState('')
@@ -104,7 +101,7 @@ export function StockView({ shopping, update }: Props) {
           {counted ? (
             <span className={`qty-stepper level-${level}`} role="group" aria-label={`Quantité de ${st.name}`}>
               <button
-                onClick={() => set(st.id, { qty: Math.max(0, +(st.qty! - STEP[st.unit ?? '']).toFixed(2)) })}
+                onClick={() => set(st.id, { qty: stepQty(st, -1).qty })}
                 aria-label="Retirer un"
                 disabled={st.qty === 0}
               >
@@ -115,7 +112,7 @@ export function StockView({ shopping, update }: Props) {
                 {st.unit && <small> {st.unit}</small>}
               </span>
               <button
-                onClick={() => set(st.id, { qty: +(st.qty! + STEP[st.unit ?? '']).toFixed(2) })}
+                onClick={() => set(st.id, { qty: stepQty(st, 1).qty })}
                 aria-label="Ajouter un"
               >
                 +
@@ -320,7 +317,7 @@ export function StockView({ shopping, update }: Props) {
             </section>
           ))}
 
-          <p className="footer-note">Après « Courses terminées », les produits achetés repassent à OK.</p>
+          <p className="footer-note">Après « Courses terminées », les quantités achetées sont ajoutées au stock.</p>
         </>
       )}
     </>

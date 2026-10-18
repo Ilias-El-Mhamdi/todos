@@ -2072,3 +2072,73 @@ button.danger {
 .priority-filter .chip.priority-1:not(.active) { color: var(--late); }
 .priority-filter .chip.priority-2:not(.active) { color: var(--today); }
 .priority-filter .chip.priority-3:not(.active) { color: var(--soon); }
+
+/* End of shopping */
+.item-stepper {
+  gap: 2px;
+}
+
+.item-stepper .qty-editor input {
+  width: 64px;
+}
+
+.review-hint {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.restock-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.restock-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.restock-name {
+  font-weight: 600;
+}
+
+.restock-effect {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.restock-effect strong {
+  color: var(--ok);
+}
+
+.restock-track {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-height: 32px;
+}
+
+.restock-track input {
+  width: 20px;
+  height: 20px;
+}
+
+.review-actions {
+  position: sticky;
+  bottom: 0;
+  padding: 12px 0;
+  background: var(--bg);
+}
+
+.review-actions .primary {
+  flex-basis: 100%;
+  min-height: 48px;
+}

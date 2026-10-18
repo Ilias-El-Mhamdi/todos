@@ -91,3 +91,12 @@ export function missingQty(have: Quantity, need: Quantity): Quantity | null {
   if (dimH !== dimN) return null
   return { qty: fromBase(need.unit, Math.max(0, baseN - baseH)), unit: need.unit ?? '' }
 }
+
+/** Stepper increment per unit: one by one for counts, sensible chunks for weights and volumes. */
+export const QTY_STEP: Record<Unit, number> = { '': 1, g: 100, kg: 0.5, ml: 100, cl: 10, L: 0.5 }
+
+/** One stepper tap up or down; no quantity yet counts from zero. Never below zero. */
+export function stepQty({ qty, unit = '' }: Quantity, direction: 1 | -1): Quantity {
+  const next = +Math.max(0, (qty ?? 0) + direction * QTY_STEP[unit]).toFixed(2)
+  return { qty: next, unit }
+}
