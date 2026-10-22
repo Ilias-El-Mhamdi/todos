@@ -533,7 +533,7 @@ export default function App() {
                 onReorder={reorderToday}
                 candidates={rows.filter((r) => !r.hidden && !state.today.ids.includes(r.task.id))}
                 onCreate={(title) =>
-                  setEditing({ defaults: { title, category: 'autre', frequency: 'once' }, addToToday: true })
+                  setEditing({ defaults: { title, category: 'todo', frequency: 'once' }, addToToday: true })
                 }
               />
             )}

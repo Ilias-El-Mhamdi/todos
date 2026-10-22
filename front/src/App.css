@@ -24,6 +24,7 @@
   --cat-business: #8a6d1f;
   --cat-hygiene: #2a7f86;
   --cat-travaux: #b0561c;
+  --cat-todo: #3d6b5c;
   color-scheme: light;
 }
 
@@ -53,6 +54,7 @@
   --cat-business: #e6c86e;
   --cat-hygiene: #6fd0d6;
   --cat-travaux: #f0a06a;
+  --cat-todo: #8fd1b8;
   color-scheme: dark;
 }
 
@@ -1504,6 +1506,7 @@ header h1 {
 .badge.cat-business { color: var(--cat-business); }
 .badge.cat-hygiene { color: var(--cat-hygiene); }
 .badge.cat-travaux { color: var(--cat-travaux); }
+.badge.cat-todo { color: var(--cat-todo); }
 
 .status-badge-en-retard { background: var(--late-bg); color: var(--late); }
 .status-badge-aujourdhui { background: var(--today-bg); color: var(--today); }

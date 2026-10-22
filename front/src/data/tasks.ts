@@ -11,6 +11,7 @@ export type Category =
   | 'business'
   | 'hygiene'
   | 'travaux'
+  | 'todo'
   | 'autre'
 
 export type Frequency =
@@ -67,6 +68,7 @@ export const CATEGORIES: Record<Category, { label: string; icon: string }> = {
   business: { label: 'Business', icon: '🏢' },
   hygiene: { label: 'Hygiène & soins', icon: '🪥' },
   travaux: { label: 'Travaux', icon: '🔨' },
+  todo: { label: 'Todo', icon: '✅' },
   autre: { label: 'Autre', icon: '📌' },
 }
 
