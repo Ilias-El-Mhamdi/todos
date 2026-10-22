@@ -13,7 +13,7 @@ npm run start:dev          # http://localhost:3000 — les migrations s'applique
 ```
 
 Créer le compte : sur la page de login du front, « Créer le compte (générer un hash) » produit l'`INSERT` à exécuter
-dans la base.
+dans la base. « Mot de passe oublié » produit de la même façon l'`UPDATE` qui remplace le hash d'un compte existant.
 
 ## Endpoints
 

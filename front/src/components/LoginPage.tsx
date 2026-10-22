@@ -48,14 +48,15 @@ export function LoginPage() {
           {busy ? 'Connexion…' : 'Se connecter'}
         </button>
       </form>
-      <HashTool />
+      <HashTool mode="create" />
+      <HashTool mode="reset" />
       <VersionInfo />
     </main>
   )
 }
 
-/** Account setup helper: hashes a password so it can be inserted by hand into the "User" table. */
-function HashTool() {
+/** Hashes a password and builds the SQL to run by hand on the "User" table: INSERT for a new account, UPDATE for a reset. */
+function HashTool({ mode }: { mode: 'create' | 'reset' }) {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [hash, setHash] = useState<string | null>(null)
@@ -73,18 +74,23 @@ function HashTool() {
     }
   }
 
-  const sql = hash && `INSERT INTO "User" (username, "passwordHash") VALUES ('${username.replaceAll("'", "''")}', '${hash}');`
+  const name = username.replaceAll("'", "''")
+  const sql =
+    hash &&
+    (mode === 'create'
+      ? `INSERT INTO "User" (username, "passwordHash") VALUES ('${name}', '${hash}');`
+      : `UPDATE "User" SET "passwordHash" = '${hash}' WHERE username = '${name}';`)
 
   return (
     <details className="login-card hash-tool">
-      <summary>Créer le compte (générer un hash)</summary>
+      <summary>{mode === 'create' ? 'Créer le compte (générer un hash)' : 'Mot de passe oublié'}</summary>
       <form onSubmit={generate}>
         <label>
           Utilisateur
           <input autoComplete="off" value={username} onChange={(e) => setUsername(e.target.value)} required />
         </label>
         <label>
-          Mot de passe <span className="hint">(8 caractères min.)</span>
+          {mode === 'create' ? 'Mot de passe' : 'Nouveau mot de passe'} <span className="hint">(8 caractères min.)</span>
           <input
             type="password"
             autoComplete="new-password"
