@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { countdown, getStatus, nextDue, nextDueKm } from './frequency'
+import { countdown, currentDay, getStatus, msUntilNextDay, nextDue, nextDueKm } from './frequency'
 
 const today = '2026-10-11'
 
@@ -105,5 +105,23 @@ describe('countdown', () => {
   it('counts up once overdue', () => {
     expect(countdown('2026-10-09', today)).toBe('J+2')
     expect(countdown('2026-07-11', today)).toBe('M+3')
+  })
+})
+
+describe('currentDay', () => {
+  it('rolls over at 3 a.m., not midnight', () => {
+    expect(currentDay(new Date(2026, 10, 14, 0, 30))).toBe('2026-11-13')
+    expect(currentDay(new Date(2026, 10, 14, 2, 59))).toBe('2026-11-13')
+    expect(currentDay(new Date(2026, 10, 14, 3, 0))).toBe('2026-11-14')
+    expect(currentDay(new Date(2026, 10, 14, 23, 59))).toBe('2026-11-14')
+  })
+
+  it('handles month boundaries', () => {
+    expect(currentDay(new Date(2026, 11, 1, 1, 0))).toBe('2026-11-30')
+  })
+
+  it('computes the delay to the next rollover', () => {
+    expect(msUntilNextDay(new Date(2026, 10, 14, 2, 0))).toBe(3_600_000)
+    expect(msUntilNextDay(new Date(2026, 10, 14, 3, 0))).toBe(24 * 3_600_000)
   })
 })

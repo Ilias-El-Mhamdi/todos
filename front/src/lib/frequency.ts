@@ -53,6 +53,23 @@ export function toISODate(d: Date): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
 
+/** Hour at which a new day starts: before 3 a.m. still counts as the previous day. */
+export const DAY_START_HOUR = 3
+
+/** The app's current day (YYYY-MM-DD), rolling over at DAY_START_HOUR instead of midnight. */
+export function currentDay(now: Date): string {
+  const d = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  if (now.getHours() < DAY_START_HOUR) d.setDate(d.getDate() - 1)
+  return toISODate(d)
+}
+
+/** Milliseconds until the next DAY_START_HOUR rollover. */
+export function msUntilNextDay(now: Date): number {
+  const next = new Date(now.getFullYear(), now.getMonth(), now.getDate(), DAY_START_HOUR)
+  if (next <= now) next.setDate(next.getDate() + 1)
+  return next.getTime() - now.getTime()
+}
+
 function parse(iso: string): Date {
   const [y, m, d] = iso.split('-').map(Number)
   return new Date(y, m - 1, d)

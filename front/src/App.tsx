@@ -3,7 +3,7 @@ import './App.css'
 import type { Category, Frequency, Task } from './data/tasks'
 import { CATEGORIES, FREQUENCIES, TASKS } from './data/tasks'
 import type { Status } from './lib/frequency'
-import { STATUS_LABELS, STATUS_ORDER, getStatus, toISODate } from './lib/frequency'
+import { STATUS_LABELS, STATUS_ORDER, currentDay, getStatus, msUntilNextDay } from './lib/frequency'
 import { Odometer } from './components/Odometer'
 import { mergeDefaults, useLocalStorage } from './lib/storage'
 import { useSyncedState } from './lib/syncedState'
@@ -145,17 +145,27 @@ export default function App() {
   const [filters, setFilters] = useState(initialFilters)
   const [statusFilter, setStatusFilter] = useState<Status | null>(null)
   const [prefs, setPrefs] = useLocalStorage<{ theme: Theme }>('entretien.prefs', { theme: 'dark' })
-  const [today, setToday] = useState(() => toISODate(new Date()))
+  const [today, setToday] = useState(() => currentDay(new Date()))
 
   useEffect(() => {
     document.documentElement.dataset.theme = prefs.theme
   }, [prefs.theme])
 
-  // Refresh "today" when the tab comes back after midnight.
+  // Refresh "today" at the 3 a.m. rollover, and when the tab comes back after it.
   useEffect(() => {
-    const refresh = () => setToday(toISODate(new Date()))
+    let timer: ReturnType<typeof setTimeout>
+    const refresh = () => {
+      const now = new Date()
+      setToday(currentDay(now))
+      clearTimeout(timer)
+      timer = setTimeout(refresh, msUntilNextDay(now) + 1000)
+    }
+    refresh()
     window.addEventListener('focus', refresh)
-    return () => window.removeEventListener('focus', refresh)
+    return () => {
+      clearTimeout(timer)
+      window.removeEventListener('focus', refresh)
+    }
   }, [])
 
   // "#/tasks?search=…" opens the task list filtered on that text, then cleans the URL.
